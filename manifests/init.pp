@@ -79,12 +79,16 @@ class cspace_source {
     }
 	
 	# Experiment with setting environment variables on the fly.
-	# Note that, if we set the 'user' property, it appears that
-	# the 'exec':
+	#
+	# Note that the 'user' property is currently commented out.
+	# If we set that property, it appears that the 'exec':
+	#
 	# a) must be run as root; and
 	# b) is then given root's environment, not that of the designated user.
+	# (That may not always be what we intend.)
 	#
-	# When not run as root, the following error occurs:
+	# When the 'user' property is set and this 'exec' is then run as
+	# a non-root user, the following error occurs:
 	# "Error: Parameter user failed on Exec[...]:
 	# Only root can execute commands as other users""
 	
