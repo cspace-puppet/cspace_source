@@ -45,52 +45,70 @@
 class cspace_source {
     
     file { 'Create CollectionSpace source directory':
-        path   => "/tmp/cspace-source",
-        ensure => "directory",
+        path   => '/tmp/cspace-source',
+        ensure => 'directory',
     }
     
     # Download and build the Application layer
     
     vcsrepo { '/tmp/cspace-source/application':
-        require => File['Create CollectionSpace source directory'],
+        require  => File[ 'Create CollectionSpace source directory' ],
         # require  => [ Package["git"] ],
-        ensure => latest,
+        ensure   => latest,
         provider => 'git',
         source   => 'https://github.com/collectionspace/application.git',
         revision => 'master',
     }
     
     exec { 'Maven clean of Application layer source':
-        require => Vcsrepo['/tmp/cspace-source/application'],
+        require => Vcsrepo[ '/tmp/cspace-source/application' ],
         command => 'mvn clean',
-        cwd => '/tmp/cspace-source/application',
-        path => ['/bin', '/usr/bin'],
+        cwd     => '/tmp/cspace-source/application',
+        path    => [ '/bin', '/usr/bin' ],
     }
 
     # Download and build the Services layer
     
     vcsrepo { '/tmp/cspace-source/services':
-        require => File['Create CollectionSpace source directory'],
+        require  => File[ 'Create CollectionSpace source directory' ],
         # require  => [ Package["git"] ],
-        ensure => latest,
+        ensure   => latest,
         provider => 'git',
         source   => 'https://github.com/collectionspace/services.git',
         revision => 'master',
     }
+	
+	# Experiment with setting environment variables on the fly.
+	# Note that, if we set the 'user' property, it appears that
+	# the 'exec':
+	# a) must be run as root; and
+	# b) is then given root's environment, not that of the designated user.
+	#
+	# When not run as root, the following error occurs:
+	# "Error: Parameter user failed on Exec[...]:
+	# Only root can execute commands as other users""
+	
+	exec { 'Check values of environment variables':
+	    command   => 'env',
+	    path      => [ '/bin', '/usr/bin' ],
+	    logoutput => 'true',
+		environment => [ 'FOO=foo', 'BAR=bar', 'DB_PASSWORD_CSPACE=foobar' ]
+	    # user      => 'cspace',
+    }
     
     exec { 'Maven clean of Services layer source':
-        require => Vcsrepo['/tmp/cspace-source/services'],
+        require => Vcsrepo[ '/tmp/cspace-source/services' ],
         command => 'mvn clean',
-        cwd => '/tmp/cspace-source/services',
-        path => ['/bin', '/usr/bin'],
+        cwd     => '/tmp/cspace-source/services',
+        path    => [ '/bin', '/usr/bin' ],
     }
 
     # Download the UI layer
 
     vcsrepo { '/tmp/cspace-source/ui':
-        require => File['Create CollectionSpace source directory'],
+        require  => File[ 'Create CollectionSpace source directory' ],
         # require  => [ Package["git"] ],
-        ensure => latest,
+        ensure   => latest,
         provider => 'git',
         source   => 'https://github.com/collectionspace/ui.git',
         revision => 'master',
