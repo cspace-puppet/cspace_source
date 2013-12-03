@@ -107,6 +107,13 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         path    => $exec_paths,
         require => Vcsrepo[ '/tmp/cspace-source/services' ],
     }
+	
+    exec { 'Ant generation of Services artifacts':
+        command => 'ant deploy_services_artifacts',
+        cwd     => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
+        path    => $exec_paths,
+        require => Vcsrepo[ '/tmp/cspace-source/services' ],
+    }
 
     # Download the UI layer
 
@@ -122,11 +129,33 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 
 # Create an instance of this class
 
+# Values below should likely be read from a per-node Environment,
+# from configuration files, or from the Heira database, rather than
+# hard-coded in a manifest.
+#
+# See, for instance:
+# http://docs.puppetlabs.com/guides/environment.html
+# https://gist.github.com/aronr/7763527 (reading YAML files)
+# http://docs.puppetlabs.com/hiera/1/
+
 class { 'cspace_source': 
+    # The values below should be reviewed and changed as needed.
+    # In particular, password values below are set to easily-guessable
+    # defaults and MUST be changed.
+    #
+    # The value of JAVA_HOME is not set here; it is assumed to be present
+    # in Ant and Maven's environments.
     env_vars   => [ 
-        'BAR=bar',
-        'DB_PASSWORD_CSPACE=foobar',
-        'FOO=foo',
+	    'ANT_OPTS=-Xmx768m -XX:MaxPermSize=512m',
+	    'CATALINA_HOME=/usr/local/share/apache-tomcat-6.0.33',
+	    'CATALINA_OPTS=-Xmx1024m -XX:MaxPermSize=384m',
+	    'CATALINA_PID=/usr/local/share/apache-tomcat-6.0.33/bin/tomcat.pid',
+	    'CSPACE_JEESERVER_HOME=/usr/local/share/apache-tomcat-6.0.33',
+		'DB_PASSWORD_CSPACE=cspace',
+		'DB_PASSWORD_NUXEO=nuxeo',
+		'DB_PASSWORD=postgres',
+		'LC_ALL=en_US.UTF-8',
+		'MAVEN_OPTS=-Xmx768m -XX:MaxPermSize=512m -Dfile.encoding=UTF-8',
     ],
     exec_paths => [
         '/bin',
