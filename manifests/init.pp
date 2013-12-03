@@ -47,6 +47,26 @@ $mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
 
 class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     
+    # Note that the 'user' property is currently commented out.
+    # If we set that property, it appears that the 'exec':
+    #
+    # a) must be run as root; and
+    # b) is then given root's environment, not that of the designated user.
+    # (That may not always be what we intend.)
+    #
+    # When the 'user' property is set and this 'exec' is then run as
+    # a non-root user, the following error occurs:
+    # "Error: Parameter user failed on Exec[...]:
+    # Only root can execute commands as other users""
+    
+    exec { 'Check values of environment variables':
+        command   => 'env',
+        path      => $exec_paths,
+        logoutput => 'true',
+        environment => [ $env_vars ]
+        # user      => 'cspace',
+    }
+	
     file { 'Create CollectionSpace source directory':
         ensure => 'directory',
         path   => '/tmp/cspace-source',
@@ -79,28 +99,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         require  => File[ 'Create CollectionSpace source directory' ],
     }
     
-    # Experiment with setting environment variables on the fly.
-    #
-    # Note that the 'user' property is currently commented out.
-    # If we set that property, it appears that the 'exec':
-    #
-    # a) must be run as root; and
-    # b) is then given root's environment, not that of the designated user.
-    # (That may not always be what we intend.)
-    #
-    # When the 'user' property is set and this 'exec' is then run as
-    # a non-root user, the following error occurs:
-    # "Error: Parameter user failed on Exec[...]:
-    # Only root can execute commands as other users""
-    
-    exec { 'Check values of environment variables':
-        command   => 'env',
-        path      => $exec_paths,
-        logoutput => 'true',
-        environment => [ $env_vars ]
-        # user      => 'cspace',
-    }
-    
+	# Placeholder for full installation
     exec { 'Maven clean of Services layer source':
         command => $mvn_clean_cmd,
         cwd     => '/tmp/cspace-source/services',
@@ -108,11 +107,15 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         require => Vcsrepo[ '/tmp/cspace-source/services' ],
     }
 	
+	# Placeholder for full deployment (time-consuming)
     exec { 'Ant generation of Services artifacts':
         command => 'ant deploy_services_artifacts',
         cwd     => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
         path    => $exec_paths,
-        require => Vcsrepo[ '/tmp/cspace-source/services' ],
+        require => [
+		    Exec[ 'Maven clean install of Application layer source' ],
+		    Exec[ 'Maven clean of Services layer source' ],
+		],
     }
 
     # Download the UI layer
