@@ -137,6 +137,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 # http://docs.puppetlabs.com/guides/environment.html
 # https://gist.github.com/aronr/7763527 (reading YAML files)
 # http://docs.puppetlabs.com/hiera/1/
+# http://puppetlabs.com/blog/the-problem-with-separating-data-from-puppet-code
 
 class { 'cspace_source': 
     # The values below should be reviewed and changed as needed.
