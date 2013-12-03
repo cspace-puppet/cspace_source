@@ -42,7 +42,7 @@
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
 # puppet apply --modulepath=/etc/puppet/modules ./manifests/init.pp
 
-class cspace_source {
+class cspace_source( $env_vars ) {
     
     file { 'Create CollectionSpace source directory':
         path   => '/tmp/cspace-source',
@@ -96,7 +96,7 @@ class cspace_source {
 	    command   => 'env',
 	    path      => [ '/bin', '/usr/bin' ],
 	    logoutput => 'true',
-		environment => [ 'FOO=foo', 'BAR=bar', 'DB_PASSWORD_CSPACE=foobar' ]
+		environment => [ $env_vars ]
 	    # user      => 'cspace',
     }
     
@@ -120,4 +120,12 @@ class cspace_source {
 
 }
 
-include cspace_source
+# Create an instance of this class
+
+class { 'cspace_source': 
+    env_vars => [ 
+                  'BAR=bar',
+				  'DB_PASSWORD_CSPACE=foobar',
+	              'FOO=foo',
+				]
+}
