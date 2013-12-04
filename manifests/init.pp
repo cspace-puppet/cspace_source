@@ -73,19 +73,19 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 	# ---------------------------------------------------------
 	
     exec { 'Find Ant executable':
-	    command   => 'command -v ant',
+	    command   => '/bin/sh -c "command -v ant"',
 	    path      => $exec_paths,
         logoutput => 'true',
 	}
 
     exec { 'Find Git executable':
-	    command   => 'command -v git',
+	    command   => '/bin/sh -c "command -v git"',
 	    path      => $exec_paths,
         logoutput => 'true',
 	}
 	
     exec { 'Find Maven executable':
-	    command   => 'command -v mvn',
+	    command   => '/bin/sh -c "command -v mvn"',
 	    path      => $exec_paths,
         logoutput => 'true',
 	}
