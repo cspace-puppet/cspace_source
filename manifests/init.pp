@@ -40,13 +40,14 @@
 # sudo puppet module install puppetlabs-vcsrepo
 
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
-# puppet apply --modulepath=/etc/puppet/modules ./manifests/init.pp
-
-$mvn_clean_cmd = 'mvn clean'
-$mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
+# puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
 class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
-    
+	
+	# ---------------------------------------------------------
+	# Verify environment variables (uncomment for debugging)
+	# ---------------------------------------------------------
+	    
     # Note that the 'user' property is currently commented out.
     # If we set that property, it appears that the 'exec':
     #
@@ -59,112 +60,130 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     # "Error: Parameter user failed on Exec[...]:
     # Only root can execute commands as other users""
     
-    exec { 'Check values of environment variables':
-        command   => 'env',
-        path      => $exec_paths,
-        logoutput => 'true',
-        environment => [ $env_vars ]
-        # user      => 'cspace',
-    }
+    # exec { 'Check values of environment variables':
+    #     command   => 'env',
+    #     path      => $exec_paths,
+    #     logoutput => 'true',
+    #     environment => [ $env_vars ]
+    #     # user      => 'cspace',
+    # }
 	
-    file { 'Create CollectionSpace source directory':
+	# ---------------------------------------------------------
+	# Verify presence of required resources
+	# ---------------------------------------------------------
+	
+    exec { 'Find Ant executable':
+	    command   => 'command -v ant',
+	    path      => $exec_paths,
+        logoutput => 'true',
+	}
+
+    exec { 'Find Git executable':
+	    command   => 'command -v git',
+	    path      => $exec_paths,
+        logoutput => 'true',
+	}
+	
+    exec { 'Find Maven executable':
+	    command   => 'command -v mvn',
+	    path      => $exec_paths,
+        logoutput => 'true',
+	}
+	
+	# FIXME: This should use a more flexible mechanism for
+	# identifying the directory which should contain the
+	# CollectionSpace source code.
+	#
+	# FIXME: This should default to a system-specific temporary
+	# directory, not to '/tmp'.
+    file { 'Ensure CollectionSpace source directory':
         ensure => 'directory',
         path   => '/tmp/cspace-source',
+        require => [
+		    Exec[ 'Find Ant executable' ],
+		    Exec[ 'Find Git executable' ],
+		    Exec[ 'Find Maven executable' ],
+		],
     }
+	
+	# ---------------------------------------------------------
+	# Download CollectionSpace source code
+	# ---------------------------------------------------------
+	
+    # Download the Application layer source code
     
-    # Download and build the Application layer
-    
-    vcsrepo { '/tmp/cspace-source/application':
+    vcsrepo { 'Download Application layer source code':
         ensure   => latest,
         provider => 'git',
         source   => 'https://github.com/collectionspace/application.git',
         revision => 'master',
-        require  => File[ 'Create CollectionSpace source directory' ],
-    }
-    
-    exec { 'Maven clean install of Application layer source':
-        command => $mvn_clean_install_cmd,
-        cwd     => '/tmp/cspace-source/application',
-        path    => $exec_paths,
-        require => Vcsrepo[ '/tmp/cspace-source/application' ],
+	    path     => '/tmp/cspace-source/application',
+        require  => File[ 'Ensure CollectionSpace source directory' ],
     }
 
-    # Download and build the Services layer
+    # Download the Services layer source code
     
-    vcsrepo { '/tmp/cspace-source/services':
+    vcsrepo { 'Download Services layer source code':
         ensure   => latest,
         provider => 'git',
         source   => 'https://github.com/collectionspace/services.git',
         revision => 'master',
-        require  => File[ 'Create CollectionSpace source directory' ],
-    }
-    
-	# Placeholder for full installation
-    exec { 'Maven clean of Services layer source':
-        command => $mvn_clean_cmd,
-        cwd     => '/tmp/cspace-source/services',
-        path    => $exec_paths,
-        require => Vcsrepo[ '/tmp/cspace-source/services' ],
+	    path     => '/tmp/cspace-source/services',
+        require  => File[ 'Ensure CollectionSpace source directory' ],
     }
 	
-	# Placeholder for full deployment (time-consuming)
-    exec { 'Ant generation of Services artifacts':
-        command => 'ant deploy_services_artifacts',
-        cwd     => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
-        path    => $exec_paths,
-        require => [
-		    Exec[ 'Maven clean install of Application layer source' ],
-		    Exec[ 'Maven clean of Services layer source' ],
-		],
-    }
+    # Download the UI layer source code
 
-    # Download the UI layer
-
-    vcsrepo { '/tmp/cspace-source/ui':
+    vcsrepo { 'Download UI layer source code':
         ensure   => latest,
         provider => 'git',
         source   => 'https://github.com/collectionspace/ui.git',
         revision => 'master',
-        require  => File[ 'Create CollectionSpace source directory' ],
+	    path     => '/tmp/cspace-source/ui',
+        require  => File[ 'Ensure CollectionSpace source directory' ],
+    }
+		
+	# ---------------------------------------------------------
+	# Build and deploy CollectionSpace's layers
+	# ---------------------------------------------------------
+	
+	$mvn_clean_cmd = 'mvn clean'
+	$mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
+    
+    # Build and deploy the Application layer
+    
+    exec { 'Build and deploy of Application layer source':
+	    command => $mvn_clean_install_cmd,
+        cwd     => '/tmp/cspace-source/application',
+        path    => $exec_paths,
+        require => Vcsrepo[ 'Download Application layer source code' ]
     }
 
+    # Build and deploy the Services layer
+    
+    exec { 'Build of Services layer source':
+	    # Command below is a temporary placeholder during development
+	    # for the full build (very time consuming)
+        command => $mvn_clean_cmd,
+        cwd     => '/tmp/cspace-source/services',
+        path    => $exec_paths,
+        require => Vcsrepo[ 'Download Services layer source code' ],
+    }
+	
+    exec { 'Deploy of Services layer source':
+	    # Command below is a temporary placeholder during development
+	    # for the full deploy (very time consuming)
+        command => 'ant deploy_services_artifacts',
+        cwd     => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
+        path    => $exec_paths,
+        require => [
+		    Exec[ 'Build and deploy of Application layer source' ],
+		    Exec[ 'Build of Services layer source' ],
+		],
+    }
+	
+	# There is currently no UI layer build required: the tarball of the
+	# CollectionSpace Tomcat server folder contains a prebuilt UI layer.
+
 }
 
-# Create an instance of this class
-
-# Values below should likely be read from a per-node Environment,
-# from configuration files, or from the Heira database, rather than
-# hard-coded in a manifest.
-#
-# See, for instance:
-# http://docs.puppetlabs.com/guides/environment.html
-# https://gist.github.com/aronr/7763527 (reading YAML files)
-# http://docs.puppetlabs.com/hiera/1/
-# http://puppetlabs.com/blog/the-problem-with-separating-data-from-puppet-code
-
-class { 'cspace_source': 
-    # The values below should be reviewed and changed as needed.
-    # In particular, password values below are set to easily-guessable
-    # defaults and MUST be changed.
-    #
-    # The value of JAVA_HOME is not set here; it is assumed to be present
-    # in Ant and Maven's environments.
-    env_vars   => [ 
-	    'ANT_OPTS=-Xmx768m -XX:MaxPermSize=512m',
-	    'CATALINA_HOME=/usr/local/share/apache-tomcat-6.0.33',
-	    'CATALINA_OPTS=-Xmx1024m -XX:MaxPermSize=384m',
-	    'CATALINA_PID=/usr/local/share/apache-tomcat-6.0.33/bin/tomcat.pid',
-	    'CSPACE_JEESERVER_HOME=/usr/local/share/apache-tomcat-6.0.33',
-		'DB_PASSWORD_CSPACE=cspace',
-		'DB_PASSWORD_NUXEO=nuxeo',
-		'DB_PASSWORD=postgres',
-		'LC_ALL=en_US.UTF-8',
-		'MAVEN_OPTS=-Xmx768m -XX:MaxPermSize=512m -Dfile.encoding=UTF-8',
-    ],
-    exec_paths => [
-        '/bin',
-        '/usr/bin',
-		'/usr/local/bin',
-    ],
-                
-}
