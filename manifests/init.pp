@@ -95,24 +95,22 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
 	# Ensure presence of a directory to contain source code
 	# ---------------------------------------------------------
 	
-	# FIXME: The default source code directory should default to using a
-	# system-specific temporary directory, rather than the hard-coded '/tmp'.
-	$hard_coded_temp_dir = '/tmp'
-	$default_cspace_source_dir_name = 'cspace-source'
-	$default_cspace_source_dir = "${hard_coded_temp_dir}/${default_cspace_source_dir_name}"
-	notify{ "default=${default_cspace_source_dir}": }
-	
 	# Use the provided source code directory, if available.
-	# Otherwise, use a directory in a system temporary location.
 	if "${source_dir_path}" != undef {
 	    $cspace_source_dir = $source_dir_path
 		# FIXME: Verify the existence of, and (optionally) the requisite
 		# access privileges to, the provided source code directory.
 	}
+	# Otherwise, use a directory in a system temporary location.
 	else {
+	    include cspace_environment
+	    $system_temp_dir = $cspace_environment::system_temp_directory
+		$default_cspace_source_dir_name = 'cspace-source'
+		$default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
+		notify{ "Default source code directory is ${default_cspace_source_dir}": }
 	    $cspace_source_dir = $default_cspace_source_dir
 	}
-	notify{ "cspace_source=${cspace_source_dir}": }
+	notify{ "Selected cspace source code directory is ${cspace_source_dir}": }
 
     file { 'Ensure CollectionSpace source directory':
         ensure => 'directory',
