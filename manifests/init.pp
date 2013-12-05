@@ -64,7 +64,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     #     command   => 'env',
     #     path      => $exec_paths,
     #     logoutput => 'true',
-    #     environment => [ $env_vars ]
+    #     environment => $env_vars
     #     # user      => 'cspace',
     # }
 	
@@ -148,10 +148,11 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     # Build and deploy the Application layer
     
     exec { 'Build and deploy of Application layer source':
-	    command => $mvn_clean_install_cmd,
-        cwd     => '/tmp/cspace-source/application',
-        path    => $exec_paths,
-        require => [
+	    command     => $mvn_clean_install_cmd,
+        cwd         => '/tmp/cspace-source/application',
+        path        => $exec_paths,
+        environment => $env_vars,
+        require     => [
 		    Vcsrepo[ 'Download Application layer source code' ],
 		    Exec[ 'Find Maven executable' ],
 		],
@@ -162,10 +163,11 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     exec { 'Build of Services layer source':
 	    # Command below is a temporary placeholder during development
 	    # for the full build (very time consuming)
-        command => $mvn_clean_cmd,
-        cwd     => '/tmp/cspace-source/services',
-        path    => $exec_paths,
-        require => [
+        command     => $mvn_clean_cmd,
+        cwd         => '/tmp/cspace-source/services',
+        path        => $exec_paths,
+        environment => $env_vars,
+        require     => [
 			Vcsrepo[ 'Download Services layer source code' ],
 		    Exec[ 'Find Maven executable' ],
 		],
@@ -174,10 +176,11 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     exec { 'Deploy of Services layer source':
 	    # Command below is a temporary placeholder during development
 	    # for the full deploy (very time consuming)
-        command => 'ant deploy_services_artifacts',
-        cwd     => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
-        path    => $exec_paths,
-        require => [
+        command     => 'ant deploy_services_artifacts',
+        cwd         => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
+        path        => $exec_paths,
+        environment => $env_vars,
+        require     => [
 		    Exec[ 'Build and deploy of Application layer source' ],
 		    Exec[ 'Build of Services layer source' ],
 		    Exec[ 'Find Ant executable' ],
