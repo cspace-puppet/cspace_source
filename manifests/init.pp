@@ -77,12 +77,8 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 	    path      => $exec_paths,
         logoutput => 'true',
 	}
-
-    exec { 'Find Git executable':
-	    command   => '/bin/sh -c "command -v git"',
-	    path      => $exec_paths,
-        logoutput => 'true',
-	}
+	
+	# (The vcsrepo resource will verify that a Git client exists.)
 	
     exec { 'Find Maven executable':
 	    command   => '/bin/sh -c "command -v mvn"',
@@ -101,7 +97,6 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         path   => '/tmp/cspace-source',
         require => [
 		    Exec[ 'Find Ant executable' ],
-		    Exec[ 'Find Git executable' ],
 		    Exec[ 'Find Maven executable' ],
 		],
     }
@@ -156,7 +151,10 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 	    command => $mvn_clean_install_cmd,
         cwd     => '/tmp/cspace-source/application',
         path    => $exec_paths,
-        require => Vcsrepo[ 'Download Application layer source code' ]
+        require => [
+		    Vcsrepo[ 'Download Application layer source code' ],
+		    Exec[ 'Find Maven executable' ],
+		],
     }
 
     # Build and deploy the Services layer
@@ -167,7 +165,10 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         command => $mvn_clean_cmd,
         cwd     => '/tmp/cspace-source/services',
         path    => $exec_paths,
-        require => Vcsrepo[ 'Download Services layer source code' ],
+        require => [
+			Vcsrepo[ 'Download Services layer source code' ],
+		    Exec[ 'Find Maven executable' ],
+		],
     }
 	
     exec { 'Deploy of Services layer source':
@@ -179,6 +180,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         require => [
 		    Exec[ 'Build and deploy of Application layer source' ],
 		    Exec[ 'Build of Services layer source' ],
+		    Exec[ 'Find Ant executable' ],
 		],
     }
 	
