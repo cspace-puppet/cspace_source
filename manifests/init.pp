@@ -104,7 +104,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
 	# Otherwise, use a directory in a system temporary location.
 	else {
 	    include cspace_environment
-	    $system_temp_dir = $cspace_environment::system_temp_directory
+	    $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
 		$default_cspace_source_dir_name = 'cspace-source'
 		$default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
 		notify{ "Default source code directory is ${default_cspace_source_dir}": }
