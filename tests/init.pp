@@ -46,5 +46,6 @@ class { 'cspace_source':
         '/usr/bin',
 		'/usr/local/bin',
     ],
+	# source_dir_path => '/add_path_here ...'
                 
 }

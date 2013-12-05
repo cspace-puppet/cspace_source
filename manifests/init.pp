@@ -42,7 +42,7 @@
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
-class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
+class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
 	
 	# ---------------------------------------------------------
 	# Verify environment variables (uncomment for debugging)
@@ -69,42 +69,64 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     # }
 	
 	# ---------------------------------------------------------
-	# Verify presence of required resources
+	# Verify presence of required executables
 	# ---------------------------------------------------------
+	
+	# FIXME: Replace or augment with cross-platform compatible
+	# methods for finding executables, including on Windows.
 	
     exec { 'Find Ant executable':
 	    command   => '/bin/sh -c "command -v ant"',
 	    path      => $exec_paths,
         logoutput => 'true',
 	}
-	
-	# (The vcsrepo resource will verify that a Git client exists.)
-	
+		
     exec { 'Find Maven executable':
 	    command   => '/bin/sh -c "command -v mvn"',
 	    path      => $exec_paths,
         logoutput => 'true',
 	}
 	
-	# FIXME: This should use a more flexible mechanism for
-	# identifying the directory which should contain the
-	# CollectionSpace source code.
-	#
-	# FIXME: This should default to a system-specific temporary
-	# directory, not to '/tmp'.
+	# Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
+	# will intrinsically verify that a Git client exists ("Add autorequire for
+	# Package['git']"), so we don't need to independently verify its presence.
+	
+	# ---------------------------------------------------------
+	# Ensure presence of a directory to contain source code
+	# ---------------------------------------------------------
+	
+	# FIXME: The default source code directory should default to using a
+	# system-specific temporary directory, rather than the hard-coded '/tmp'.
+	$hard_coded_temp_dir = '/tmp'
+	$default_cspace_source_dir_name = 'cspace-source'
+	$default_cspace_source_dir = "${hard_coded_temp_dir}/${default_cspace_source_dir_name}"
+	notify{ "default=${default_cspace_source_dir}": }
+	
+	# Use the provided source code directory, if available.
+	# Otherwise, use a directory in a system temporary location.
+	if "${source_dir_path}" != undef {
+	    $cspace_source_dir = $source_dir_path
+		# FIXME: Verify the existence of, and (optionally) the requisite
+		# access privileges to, the provided source code directory.
+	}
+	else {
+	    $cspace_source_dir = $default_cspace_source_dir
+	}
+	notify{ "cspace_source=${cspace_source_dir}": }
+
     file { 'Ensure CollectionSpace source directory':
         ensure => 'directory',
-        path   => '/tmp/cspace-source',
+        path   => $cspace_source_dir,
         require => [
 		    Exec[ 'Find Ant executable' ],
 		    Exec[ 'Find Maven executable' ],
 		],
     }
-	
+		
 	# ---------------------------------------------------------
 	# Download CollectionSpace source code
 	# ---------------------------------------------------------
-	
+		
     # Download the Application layer source code
     
     vcsrepo { 'Download Application layer source code':
@@ -112,7 +134,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         provider => 'git',
         source   => 'https://github.com/collectionspace/application.git',
         revision => 'master',
-	    path     => '/tmp/cspace-source/application',
+	    path     => "${cspace_source_dir}/application",
         require  => File[ 'Ensure CollectionSpace source directory' ],
     }
 
@@ -123,7 +145,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         provider => 'git',
         source   => 'https://github.com/collectionspace/services.git',
         revision => 'master',
-	    path     => '/tmp/cspace-source/services',
+	    path     => "${cspace_source_dir}/services",
         require  => File[ 'Ensure CollectionSpace source directory' ],
     }
 	
@@ -134,7 +156,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
         provider => 'git',
         source   => 'https://github.com/collectionspace/ui.git',
         revision => 'master',
-	    path     => '/tmp/cspace-source/ui',
+	    path     => "${cspace_source_dir}/ui",
         require  => File[ 'Ensure CollectionSpace source directory' ],
     }
 		
@@ -149,7 +171,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
     
     exec { 'Build and deploy of Application layer source':
 	    command     => $mvn_clean_install_cmd,
-        cwd         => '/tmp/cspace-source/application',
+        cwd         => "${cspace_source_dir}/application",
         path        => $exec_paths,
         environment => $env_vars,
         require     => [
@@ -164,7 +186,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 	    # Command below is a temporary placeholder during development
 	    # for the full build (very time consuming)
         command     => $mvn_clean_cmd,
-        cwd         => '/tmp/cspace-source/services',
+        cwd         => "${cspace_source_dir}/services",
         path        => $exec_paths,
         environment => $env_vars,
         require     => [
@@ -177,7 +199,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ] ) {
 	    # Command below is a temporary placeholder during development
 	    # for the full deploy (very time consuming)
         command     => 'ant deploy_services_artifacts',
-        cwd         => '/tmp/cspace-source/services/services/JaxRsServiceProvider',
+        cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
         path        => $exec_paths,
         environment => $env_vars,
         require     => [
