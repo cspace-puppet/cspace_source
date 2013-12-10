@@ -24,7 +24,7 @@
 # === Examples
 #
 #  class { cspace_source:
-#    servers => [ 'pool.ntp.org', 'ntp.local.company.com' ],
+#  servers => [ 'pool.ntp.org', 'ntp.local.company.com' ],
 #  }
 #
 # === Authors
@@ -43,172 +43,172 @@
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
 class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
-	
-	# ---------------------------------------------------------
-	# Verify environment variables (uncomment for debugging)
-	# ---------------------------------------------------------
-	    
-    # Note that the 'user' property is currently commented out.
-    # If we set that property, it appears that the 'exec':
-    #
-    # a) must be run as root; and
-    # b) is then given root's environment, not that of the designated user.
-    # (That may not always be what we intend.)
-    #
-    # When the 'user' property is set and this 'exec' is then run as
-    # a non-root user, the following error occurs:
-    # "Error: Parameter user failed on Exec[...]:
-    # Only root can execute commands as other users""
-    
-    # exec { 'Check values of environment variables':
-    #     command   => 'env',
-    #     path      => $exec_paths,
-    #     logoutput => 'true',
-    #     environment => $env_vars
-    #     # user      => 'cspace',
-    # }
-	
-	# ---------------------------------------------------------
-	# Verify presence of required executables
-	# ---------------------------------------------------------
-	
-	# FIXME: Replace or augment with cross-platform compatible
-	# methods for finding executables, including on Windows.
-	
-    exec { 'Find Ant executable':
-	    command   => '/bin/sh -c "command -v ant"',
-	    path      => $exec_paths,
-        logoutput => 'true',
-	}
-		
-    exec { 'Find Maven executable':
-	    command   => '/bin/sh -c "command -v mvn"',
-	    path      => $exec_paths,
-        logoutput => 'true',
-	}
-	
-	# Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
-	# will intrinsically verify that a Git client exists ("Add autorequire for
-	# Package['git']"), so we don't need to independently verify its presence.
-	
-	# ---------------------------------------------------------
-	# Ensure presence of a directory to contain source code
-	# ---------------------------------------------------------
-	
-	# Use the provided source code directory, if available.
-	if "${source_dir_path}" != undef {
-	    $cspace_source_dir = $source_dir_path
-		# FIXME: Verify the existence of, and (optionally) the requisite
-		# access privileges to, the provided source code directory.
-	}
-	# Otherwise, use a directory in a system temporary location.
-	else {
-	    include cspace_environment
-	    $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
-		$default_cspace_source_dir_name = 'cspace-source'
-		$default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
-		notify{ "Default source code directory is ${default_cspace_source_dir}": }
-	    $cspace_source_dir = $default_cspace_source_dir
-	}
-	notify{ "Selected cspace source code directory is ${cspace_source_dir}": }
+  
+  # ---------------------------------------------------------
+  # Verify environment variables (uncomment for debugging)
+  # ---------------------------------------------------------
+  
+  # Note that the 'user' property is currently commented out.
+  # If we set that property, it appears that the 'exec':
+  #
+  # a) must be run as root; and
+  # b) is then given root's environment, not that of the designated user.
+  # (That may not always be what we intend.)
+  #
+  # When the 'user' property is set and this 'exec' is then run as
+  # a non-root user, the following error occurs:
+  # "Error: Parameter user failed on Exec[...]:
+  # Only root can execute commands as other users""
+  
+  # exec { 'View values of environment variables':
+  #   command     => 'env',
+  #   path        => $exec_paths,
+  #   logoutput   => 'true',
+  #   environment => $env_vars
+  #   # user      => 'cspace',
+  # }
+  
+  # ---------------------------------------------------------
+  # Verify presence of required executables
+  # ---------------------------------------------------------
+  
+  # FIXME: Replace or augment with cross-platform compatible
+  # methods for finding executables, including on Windows.
+  
+  exec { 'Find Ant executable':
+    command   => '/bin/sh -c "command -v ant"',
+    path      => $exec_paths,
+    logoutput => true,
+  }
+  
+  exec { 'Find Maven executable':
+    command   => '/bin/sh -c "command -v mvn"',
+    path      => $exec_paths,
+    logoutput => true,
+  }
+  
+  # Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
+  # will intrinsically verify that a Git client exists ("Add autorequire for
+  # Package['git']"), so we don't need to independently verify its presence.
+  
+  # ---------------------------------------------------------
+  # Ensure presence of a directory to contain source code
+  # ---------------------------------------------------------
+  
+  # Use the provided source code directory, if available.
+  if $source_dir_path != undef {
+    $cspace_source_dir = $source_dir_path
+    # FIXME: Verify the existence of, and (optionally) the requisite
+    # access privileges to, the provided source code directory.
+  }
+  # Otherwise, use a directory in a system temporary location.
+  else {
+    include cspace_environment
+    $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
+    $default_cspace_source_dir_name = 'cspace-source'
+    $default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
+    notify{ "Default source code directory is ${default_cspace_source_dir}": }
+    $cspace_source_dir = $default_cspace_source_dir
+  }
+  notify{ "Selected cspace source code directory is ${cspace_source_dir}": }
 
-    file { 'Ensure CollectionSpace source directory':
-        ensure => 'directory',
-        path   => $cspace_source_dir,
-        require => [
-		    Exec[ 'Find Ant executable' ],
-		    Exec[ 'Find Maven executable' ],
-		],
-    }
-		
-	# ---------------------------------------------------------
-	# Download CollectionSpace source code
-	# ---------------------------------------------------------
-		
-    # Download the Application layer source code
-    
-    vcsrepo { 'Download Application layer source code':
-        ensure   => latest,
-        provider => 'git',
-        source   => 'https://github.com/collectionspace/application.git',
-        revision => 'master',
-	    path     => "${cspace_source_dir}/application",
-        require  => File[ 'Ensure CollectionSpace source directory' ],
-    }
+  file { 'Ensure CollectionSpace source directory':
+    ensure  => 'directory',
+    path    => $cspace_source_dir,
+    require => [
+      Exec[ 'Find Ant executable' ],
+      Exec[ 'Find Maven executable' ],
+    ],
+  }
+  
+  # ---------------------------------------------------------
+  # Download CollectionSpace source code
+  # ---------------------------------------------------------
+  
+  # Download the Application layer source code
+  
+  vcsrepo { 'Download Application layer source code':
+    ensure   => latest,
+    provider => 'git',
+    source   => 'https://github.com/collectionspace/application.git',
+    revision => 'master',
+    path     => "${cspace_source_dir}/application",
+    require  => File[ 'Ensure CollectionSpace source directory' ],
+  }
 
-    # Download the Services layer source code
-    
-    vcsrepo { 'Download Services layer source code':
-        ensure   => latest,
-        provider => 'git',
-        source   => 'https://github.com/collectionspace/services.git',
-        revision => 'master',
-	    path     => "${cspace_source_dir}/services",
-        require  => File[ 'Ensure CollectionSpace source directory' ],
-    }
-	
-    # Download the UI layer source code
+  # Download the Services layer source code
+  
+  vcsrepo { 'Download Services layer source code':
+    ensure   => latest,
+    provider => 'git',
+    source   => 'https://github.com/collectionspace/services.git',
+    revision => 'master',
+    path     => "${cspace_source_dir}/services",
+    require  => File[ 'Ensure CollectionSpace source directory' ],
+  }
+  
+  # Download the UI layer source code
 
-    vcsrepo { 'Download UI layer source code':
-        ensure   => latest,
-        provider => 'git',
-        source   => 'https://github.com/collectionspace/ui.git',
-        revision => 'master',
-	    path     => "${cspace_source_dir}/ui",
-        require  => File[ 'Ensure CollectionSpace source directory' ],
-    }
-		
-	# ---------------------------------------------------------
-	# Build and deploy CollectionSpace's layers
-	# ---------------------------------------------------------
-	
-	$mvn_clean_cmd = 'mvn clean'
-	$mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
-    
-    # Build and deploy the Application layer
-    
-    exec { 'Build and deploy of Application layer source':
-	    command     => $mvn_clean_install_cmd,
-        cwd         => "${cspace_source_dir}/application",
-        path        => $exec_paths,
-        environment => $env_vars,
-        require     => [
-		    Vcsrepo[ 'Download Application layer source code' ],
-		    Exec[ 'Find Maven executable' ],
-		],
-    }
+  vcsrepo { 'Download UI layer source code':
+    ensure   => latest,
+    provider => 'git',
+    source   => 'https://github.com/collectionspace/ui.git',
+    revision => 'master',
+    path     => "${cspace_source_dir}/ui",
+    require  => File[ 'Ensure CollectionSpace source directory' ],
+  }
+  
+  # ---------------------------------------------------------
+  # Build and deploy CollectionSpace's layers
+  # ---------------------------------------------------------
+  
+  $mvn_clean_cmd = 'mvn clean'
+  $mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
+  
+  # Build and deploy the Application layer
+  
+  exec { 'Build and deploy of Application layer source':
+    command     => $mvn_clean_install_cmd,
+    cwd         => "${cspace_source_dir}/application",
+    path        => $exec_paths,
+    environment => $env_vars,
+    require     => [
+      Vcsrepo[ 'Download Application layer source code' ],
+      Exec[ 'Find Maven executable' ],
+    ],
+  }
 
-    # Build and deploy the Services layer
-    
-    exec { 'Build of Services layer source':
-	    # Command below is a temporary placeholder during development
-	    # for the full build (very time consuming)
-        command     => $mvn_clean_cmd,
-        cwd         => "${cspace_source_dir}/services",
-        path        => $exec_paths,
-        environment => $env_vars,
-        require     => [
-			Vcsrepo[ 'Download Services layer source code' ],
-		    Exec[ 'Find Maven executable' ],
-		],
-    }
-	
-    exec { 'Deploy of Services layer source':
-	    # Command below is a temporary placeholder during development
-	    # for the full deploy (very time consuming)
-        command     => 'ant deploy_services_artifacts',
-        cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
-        path        => $exec_paths,
-        environment => $env_vars,
-        require     => [
-		    Exec[ 'Build and deploy of Application layer source' ],
-		    Exec[ 'Build of Services layer source' ],
-		    Exec[ 'Find Ant executable' ],
-		],
-    }
-	
-	# There is currently no UI layer build required: the tarball of the
-	# CollectionSpace Tomcat server folder contains a prebuilt UI layer.
+  # Build and deploy the Services layer
+  
+  exec { 'Build of Services layer source':
+    # Command below is a temporary placeholder during development
+    # for the full build (very time consuming)
+    command     => $mvn_clean_cmd,
+    cwd         => "${cspace_source_dir}/services",
+    path        => $exec_paths,
+    environment => $env_vars,
+    require     => [
+      Vcsrepo[ 'Download Services layer source code' ],
+      Exec[ 'Find Maven executable' ],
+    ],
+  }
+  
+  exec { 'Deploy of Services layer source':
+    # Command below is a temporary placeholder during development
+    # for the full deploy (very time consuming)
+    command     => 'ant deploy_services_artifacts',
+    cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
+    path        => $exec_paths,
+    environment => $env_vars,
+    require     => [
+      Exec[ 'Build and deploy of Application layer source' ],
+      Exec[ 'Build of Services layer source' ],
+      Exec[ 'Find Ant executable' ],
+    ],
+  }
+  
+  # There is currently no UI layer build required: the tarball of the
+  # CollectionSpace Tomcat server folder contains a prebuilt UI layer.
 
 }
 
