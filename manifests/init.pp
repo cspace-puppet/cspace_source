@@ -42,6 +42,9 @@
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
+include cspace_environment::tempdir
+include stdlib # for 'validate_array()'
+
 class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
   
   # ---------------------------------------------------------
@@ -67,6 +70,8 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   #   environment => $env_vars
   #   # user      => 'cspace',
   # }
+  
+  validate_array($env_vars)
   
   # ---------------------------------------------------------
   # Verify presence of required executables
@@ -107,7 +112,6 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
     $default_cspace_source_dir_name = 'cspace-source'
     $default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
-    notify{ "Default source code directory is ${default_cspace_source_dir}": }
     $cspace_source_dir = $default_cspace_source_dir
   }
   notify{ "Selected cspace source code directory is ${cspace_source_dir}": }

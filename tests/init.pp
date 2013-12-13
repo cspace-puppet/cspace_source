@@ -22,30 +22,13 @@
 # http://docs.puppetlabs.com/guides/environment.html
 # http://docs.puppetlabs.com/hiera/1/
 
+include cspace_environment::env
+include cspace_environment::tempdir
+
+notify { $cspace_environment::env::cspace_env_vars: }
+
 class { 'cspace_source': 
-  # The values below should be reviewed and changed as needed.
-  # In particular, password values below are set to easily-guessable
-  # defaults and MUST be changed.
-  #
-  # The value of JAVA_HOME is not set here; it is assumed to be present
-  # in Ant and Maven's environments.
-  env_vars   => [ 
-    'ANT_OPTS=-Xmx768m -XX:MaxPermSize=512m',
-    'CATALINA_HOME=/usr/local/share/apache-tomcat-6.0.33',
-    'CATALINA_OPTS=-Xmx1024m -XX:MaxPermSize=384m',
-    'CATALINA_PID=/usr/local/share/apache-tomcat-6.0.33/bin/tomcat.pid',
-    'CSPACE_JEESERVER_HOME=/usr/local/share/apache-tomcat-6.0.33',
-    'DB_PASSWORD_CSPACE=cspace',
-    'DB_PASSWORD_NUXEO=nuxeo',
-    'DB_PASSWORD=postgres',
-    'LC_ALL=en_US.UTF-8',
-    'MAVEN_OPTS=-Xmx768m -XX:MaxPermSize=512m -Dfile.encoding=UTF-8',
-  ],
-  exec_paths => [
-    '/bin',
-    '/usr/bin',
-    '/usr/local/bin',
-  ],
+  env_vars        => $cspace_environment::env::cspace_env_vars,
+  # exec_paths      => [],
   # source_dir_path => '/add_path_here ...'
-        
 }
