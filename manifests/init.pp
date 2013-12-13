@@ -43,35 +43,14 @@
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
 include cspace_environment::tempdir
+include cspace_environment::osfamily
+include cspace_environment::user
 include stdlib # for 'validate_array()'
 
-class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
-  
-  # ---------------------------------------------------------
-  # Verify environment variables (uncomment for debugging)
-  # ---------------------------------------------------------
-  
-  # Note that the 'user' property is currently commented out.
-  # If we set that property, it appears that the 'exec':
-  #
-  # a) must be run as root; and
-  # b) is then given root's environment, not that of the designated user.
-  # (That may not always be what we intend.)
-  #
-  # When the 'user' property is set and this 'exec' is then run as
-  # a non-root user, the following error occurs:
-  # "Error: Parameter user failed on Exec[...]:
-  # Only root can execute commands as other users""
-  
-  # exec { 'View values of environment variables':
-  #   command     => 'env',
-  #   path        => $exec_paths,
-  #   logoutput   => 'true',
-  #   environment => $env_vars
-  #   # user      => 'cspace',
-  # }
+class cspace_source( $env_vars = $cspace_environment::env::cspace_env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
   
   validate_array($env_vars)
+  $user = $cspace_environment::user::user_acct_name
   
   # ---------------------------------------------------------
   # Verify presence of required executables
@@ -119,6 +98,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   file { 'Ensure CollectionSpace source directory':
     ensure  => 'directory',
     path    => $cspace_source_dir,
+    owner   => $user,
     require => [
       Exec[ 'Find Ant executable' ],
       Exec[ 'Find Maven executable' ],
@@ -137,6 +117,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/application.git',
     revision => 'master',
     path     => "${cspace_source_dir}/application",
+    user     => $user,
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
 
@@ -148,6 +129,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/services.git',
     revision => 'master',
     path     => "${cspace_source_dir}/services",
+    user     => $user,
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
   
@@ -159,6 +141,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/ui.git',
     revision => 'master',
     path     => "${cspace_source_dir}/ui",
+    user     => $user,
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
   
@@ -166,8 +149,9 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   # Build and deploy CollectionSpace's layers
   # ---------------------------------------------------------
   
-  $mvn_clean_cmd = 'mvn clean'
+  $mvn_clean_cmd         = 'mvn clean'
   $mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
+  $ant_deploy_cmd        = 'ant undeploy deploy'
   
   # Build and deploy the Application layer
   
@@ -176,9 +160,10 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     cwd         => "${cspace_source_dir}/application",
     path        => $exec_paths,
     environment => $env_vars,
+    user        => $user,
     require     => [
-      Vcsrepo[ 'Download Application layer source code' ],
       Exec[ 'Find Maven executable' ],
+      Vcsrepo[ 'Download Application layer source code' ],
     ],
   }
 
@@ -191,9 +176,10 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
+    user        => $user,
     require     => [
-      Vcsrepo[ 'Download Services layer source code' ],
       Exec[ 'Find Maven executable' ],
+      Vcsrepo[ 'Download Services layer source code' ],
     ],
   }
   
@@ -204,10 +190,11 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
     path        => $exec_paths,
     environment => $env_vars,
+    user        => $user,
     require     => [
+      Exec[ 'Find Ant executable' ],
       Exec[ 'Build and deploy of Application layer source' ],
       Exec[ 'Build of Services layer source' ],
-      Exec[ 'Find Ant executable' ],
     ],
   }
   

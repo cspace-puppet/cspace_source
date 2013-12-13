@@ -23,12 +23,11 @@
 # http://docs.puppetlabs.com/hiera/1/
 
 include cspace_environment::env
+include cspace_environment::osfamily
 include cspace_environment::tempdir
+include cspace_environment::user
 
 notify { $cspace_environment::env::cspace_env_vars: }
 
-class { 'cspace_source': 
-  env_vars        => $cspace_environment::env::cspace_env_vars,
-  # exec_paths      => [],
-  # source_dir_path => '/add_path_here ...'
+class { 'cspace_source':
 }
