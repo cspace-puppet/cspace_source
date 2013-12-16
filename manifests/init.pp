@@ -47,30 +47,6 @@ include stdlib # for 'validate_array()'
 
 class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
   
-  # ---------------------------------------------------------
-  # Verify environment variables (uncomment for debugging)
-  # ---------------------------------------------------------
-  
-  # Note that the 'user' property is currently commented out.
-  # If we set that property, it appears that the 'exec':
-  #
-  # a) must be run as root; and
-  # b) is then given root's environment, not that of the designated user.
-  # (That may not always be what we intend.)
-  #
-  # When the 'user' property is set and this 'exec' is then run as
-  # a non-root user, the following error occurs:
-  # "Error: Parameter user failed on Exec[...]:
-  # Only root can execute commands as other users""
-  
-  # exec { 'View values of environment variables':
-  #   command     => 'env',
-  #   path        => $exec_paths,
-  #   logoutput   => 'true',
-  #   environment => $env_vars
-  #   # user      => 'cspace',
-  # }
-  
   validate_array($env_vars)
   
   # ---------------------------------------------------------
@@ -114,7 +90,6 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     $default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
     $cspace_source_dir = $default_cspace_source_dir
   }
-  notify{ "Selected cspace source code directory is ${cspace_source_dir}": }
 
   file { 'Ensure CollectionSpace source directory':
     ensure  => 'directory',
