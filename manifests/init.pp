@@ -103,10 +103,11 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   # FIXME: We might consider changing this location to the home directory
   # of the CollectionSpace admin user.
   else {
-    include cspace_environment
-    $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
-    $default_cspace_source_dir_name = 'cspace-source'
-    $default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
+    # include cspace_environment
+    # $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
+    # $default_cspace_source_dir_name = 'cspace-source'
+    # $default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
+    $default_cspace_source_dir = "/home/${user_acct}"
     $cspace_source_dir = $default_cspace_source_dir
   }
 
