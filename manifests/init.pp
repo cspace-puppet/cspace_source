@@ -50,6 +50,9 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   
   validate_array($env_vars)
   
+  # FIXME: Need to qualify by OS; this module currently assumes
+  # that it's running on a Linux platform
+  
   # ---------------------------------------------------------
   # Verify presence of required executables
   # ---------------------------------------------------------
@@ -116,7 +119,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   file { 'Ensure CollectionSpace source directory':
     ensure  => 'directory',
     path    => $cspace_source_dir,
-    user    => $user_acct,
+    owner   => $user_acct,
     tag     => [ 'services', 'application', 'ui' ],
   }
   
@@ -143,7 +146,6 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/application.git',
     revision => 'master',
     path     => "${cspace_source_dir}/application",
-    user     => $user_acct,
     tag      => [ 'services', 'application' ],
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
@@ -163,7 +165,6 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/services.git',
     revision => 'master',
     path     => "${cspace_source_dir}/services",
-    user     => $user_acct,
     tag      => 'services',
     require  => File [ 'Ensure CollectionSpace source directory' ],
   }
@@ -183,7 +184,6 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/ui.git',
     revision => 'master',
     path     => "${cspace_source_dir}/ui",
-    user     => $user_acct,
     tag      => 'ui',
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
