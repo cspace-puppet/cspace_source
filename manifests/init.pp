@@ -43,9 +43,10 @@
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
 include cspace_environment::tempdir
+include cspace_environment::user
 include stdlib # for 'validate_array()'
 
-class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef ) {
+class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef, $user_acct = $cspace_environment::user::user_acct_name ) {
   
   validate_array($env_vars)
   
@@ -96,6 +97,8 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     # access privileges to, the provided source code directory.
   }
   # Otherwise, use a directory in a system temporary location.
+  # FIXME: We might consider changing this location to the home directory
+  # of the CollectionSpace admin user.
   else {
     include cspace_environment
     $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
@@ -113,6 +116,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   file { 'Ensure CollectionSpace source directory':
     ensure  => 'directory',
     path    => $cspace_source_dir,
+    user    => $user_acct,
     tag     => [ 'services', 'application', 'ui' ],
   }
   
@@ -139,6 +143,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/application.git',
     revision => 'master',
     path     => "${cspace_source_dir}/application",
+    user     => $user_acct,
     tag      => [ 'services', 'application' ],
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
@@ -158,6 +163,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/services.git',
     revision => 'master',
     path     => "${cspace_source_dir}/services",
+    user     => $user_acct,
     tag      => 'services',
     require  => File [ 'Ensure CollectionSpace source directory' ],
   }
@@ -177,6 +183,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     source   => 'https://github.com/collectionspace/ui.git',
     revision => 'master',
     path     => "${cspace_source_dir}/ui",
+    user     => $user_acct,
     tag      => 'ui',
     require  => File[ 'Ensure CollectionSpace source directory' ],
   }
@@ -206,6 +213,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     cwd         => "${cspace_source_dir}/application",
     path        => $exec_paths,
     environment => $env_vars,
+    user        => $user_acct,
     tag         => [ 'services', 'application' ],
     require     => [
       Vcsrepo[ 'Download Application layer source code' ],
@@ -229,6 +237,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
+    user        => $user_acct,
     tag         => 'services',
     require     => [
       Vcsrepo[ 'Download Services layer source code' ],
@@ -249,6 +258,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
     path        => $exec_paths,
     environment => $env_vars,
+    user        => $user_acct,
     tag         => 'services',
     require     => [
       Exec[ 'Build and deploy of Application layer source' ],
