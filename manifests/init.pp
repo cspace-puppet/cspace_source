@@ -189,6 +189,21 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   }
   
   # ---------------------------------------------------------
+  # Change ownership of the source directory, if needed
+  # ---------------------------------------------------------
+  
+  exec { 'Change ownership of source directory to CollectionSpace admin user':
+    command => "chown -R ${user_acct}: ${cspace_source_dir}",
+    path    => $exec_paths,
+    tag     => [ 'services', 'application', 'ui' ],
+    after   => [
+      Vcsrepo[ 'Download Application layer source code' ],
+      Vcsrepo[ 'Download Services layer source code' ],
+      Vcsrepo[ 'Download UI layer source code' ],
+    ]
+  }
+  
+  # ---------------------------------------------------------
   # Build and deploy CollectionSpace's layers
   # ---------------------------------------------------------
   
