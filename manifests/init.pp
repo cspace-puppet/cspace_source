@@ -99,20 +99,17 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     # FIXME: Verify the existence of, and (optionally) the requisite
     # access privileges to, the provided source code directory.
   }
-  # Otherwise, use a directory in a system temporary location.
-  # FIXME: We might consider changing this location to the home directory
+  # Otherwise, use a directory in the home directory
   # of the CollectionSpace admin user.
   else {
-    # include cspace_environment
-    # $system_temp_dir = $cspace_environment::tempdir::system_temp_directory
-    # $default_cspace_source_dir_name = 'cspace-source'
-    # $default_cspace_source_dir = "${system_temp_dir}/${default_cspace_source_dir_name}"
-    $default_cspace_source_dir = "/home/${user_acct}"
+    $default_cspace_source_dir_name = 'cspace-source'
+    # FIXME: Hard-coded home directory location; could use $HOME if available
+    $default_cspace_source_dir = "/home/${user_acct}/${default_cspace_source_dir_name}"
     $cspace_source_dir = $default_cspace_source_dir
   }
 
   notify{ 'Creating source directory':
-    message => 'Creating directory to hold CollectionSpace source code, if not present ...',
+    message => 'Creating ${default_cspace_source_dir} directory to hold CollectionSpace source code, if not present ...',
     tag     => [ 'services', 'application', 'ui' ],
     before  => File [ 'Ensure CollectionSpace source directory' ],
   }
