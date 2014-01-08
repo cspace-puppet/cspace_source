@@ -194,10 +194,11 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
     command   => "chown -R ${user_acct}: ${cspace_source_dir}",
     path      => $exec_paths,
     tag       => [ 'services', 'application', 'ui' ],
-    subscribe => [
-      Vcsrepo[ 'Download Application layer source code' ],
-      Vcsrepo[ 'Download Services layer source code' ],
-      Vcsrepo[ 'Download UI layer source code' ]
+    # TODO: There may be a better way to do this; 'subscribe'-ing
+    # to each layer's Vcsrepo resource didn't work here as intended.
+    before    => [
+      Notify[ 'Building Application layer' ],
+      Notify[ 'Building Services layer' ],
     ]
   }
   
