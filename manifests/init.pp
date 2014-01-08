@@ -109,7 +109,7 @@ class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_di
   }
 
   notify{ 'Creating source directory':
-    message => 'Creating ${default_cspace_source_dir} directory to hold CollectionSpace source code, if not present ...',
+    message => "Creating ${cspace_source_dir} directory to hold CollectionSpace source code, if not present ...",
     tag     => [ 'services', 'application', 'ui' ],
     before  => File [ 'Ensure CollectionSpace source directory' ],
   }
