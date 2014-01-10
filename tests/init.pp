@@ -23,17 +23,9 @@
 # http://docs.puppetlabs.com/hiera/1/
 
 include cspace_environment::env
-include cspace_environment::tempdir
 include cspace_user
 
-$env_vars = join( sort ($cspace_environment::env::cspace_env_vars), "\n" )
-notice( "CollectionSpace-relevant environment variables consist of:\n${env_vars}" )
-
-class { 'cspace_source': 
-  env_vars        => $cspace_environment::env::cspace_env_vars,
-  # exec_paths      => [],
-  # source_dir_path => '/add_path_here ...'
-}
+class { 'cspace_source': }
 
 notice( "CollectionSpace source code directory is ${cspace_source::cspace_source_dir}" )
 
