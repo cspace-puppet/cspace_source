@@ -24,7 +24,7 @@
 
 include cspace_environment::env
 include cspace_environment::tempdir
-include cspace_environment::user
+include cspace_user
 
 $env_vars = join( sort ($cspace_environment::env::cspace_env_vars), "\n" )
 notice( "CollectionSpace-relevant environment variables consist of:\n${env_vars}" )

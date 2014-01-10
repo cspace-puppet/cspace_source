@@ -43,10 +43,10 @@
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
 include cspace_environment::tempdir
-include cspace_environment::user
+include cspace_user
 include stdlib # for 'validate_array()'
 
-class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef, $user_acct = $cspace_environment::user::user_acct_name ) {
+class cspace_source( $env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef, $user_acct = $cspace_user::user_acct_name ) {
   
   validate_array($env_vars)
   
