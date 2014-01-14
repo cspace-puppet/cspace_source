@@ -22,8 +22,8 @@
 # http://docs.puppetlabs.com/guides/environment.html
 # http://docs.puppetlabs.com/hiera/1/
 
-include cspace_environment::env
 include cspace_user
+include cspace_user::env
 
 class { 'cspace_source': }
 

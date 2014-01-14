@@ -42,11 +42,11 @@
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
-include cspace_environment::env
 include cspace_user
+include cspace_user::env
 include stdlib # for 'validate_array()'
 
-class cspace_source( $env_vars = $cspace_environment::env::cspace_env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef, $user_acct = $cspace_user::user_acct_name ) {
+class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef, $user_acct = $cspace_user::user_acct_name ) {
   
   validate_array($env_vars)
   
