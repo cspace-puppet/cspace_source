@@ -271,7 +271,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     # command     => 'ant deploy_services_artifacts',
     # cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
     command     => 'ant deploy',
-    cwd         => "${cspace_source_dir}",
+    cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
@@ -291,7 +291,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
   
   exec { 'Create databases via Services layer source':
     command     => 'ant create_db',
-    cwd         => "${cspace_source_dir}",
+    cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
@@ -312,7 +312,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
   
   exec { 'Initialize default user accounts via Services layer source':
     command     => 'ant import',
-    cwd         => "${cspace_source_dir}",
+    cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
