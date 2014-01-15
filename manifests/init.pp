@@ -218,11 +218,11 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
   notify{ 'Building Application layer':
     message => 'Building and deploying Application layer ...',
     tag     => [ 'services', 'application' ],
-    before  => Exec [ 'Build and deploy of Application layer source' ],
+    before  => Exec [ 'Build and deploy via Application layer source' ],
     require => Vcsrepo[ 'Download Application layer source code' ],
   }
   
-  exec { 'Build and deploy of Application layer source':
+  exec { 'Build and deploy via Application layer source':
     command     => $mvn_clean_install_cmd,
     cwd         => "${cspace_source_dir}/application",
     path        => $exec_paths,
@@ -230,8 +230,8 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     user        => $user_acct,
     tag         => [ 'services', 'application' ],
     require     => [
-      Vcsrepo[ 'Download Application layer source code' ],
       Exec[ 'Find Maven executable' ],
+      Vcsrepo[ 'Download Application layer source code' ],
     ],
   }
 
@@ -240,11 +240,11 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
   notify{ 'Building Services layer':
     message => 'Building Services layer ...',
     tag     => 'services',
-    before  => Exec [ 'Build of Services layer source' ],
+    before  => Exec [ 'Build via Services layer source' ],
     require => Vcsrepo[ 'Download Services layer source code' ],
   }
   
-  exec { 'Build of Services layer source':
+  exec { 'Build via Services layer source':
     # Command below is a temporary placeholder during development
     # for the full build (very time consuming)
     command     => $mvn_clean_cmd,
@@ -254,30 +254,75 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     user        => $user_acct,
     tag         => 'services',
     require     => [
-      Vcsrepo[ 'Download Services layer source code' ],
       Exec[ 'Find Maven executable' ],
+      Vcsrepo[ 'Download Services layer source code' ],
     ],
   }
   
   notify{ 'Deploying Services layer':
     message => 'Deploying Services layer ...',
     tag     => 'services',
-    before  => Exec [ 'Deploy of Services layer source' ],
+    before  => Exec [ 'Deploy via Services layer source' ],
   }
   
-  exec { 'Deploy of Services layer source':
+  exec { 'Deploy via Services layer source':
     # Command below is a temporary placeholder during development
     # for the full deploy (very time consuming)
-    command     => 'ant deploy_services_artifacts',
-    cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
+    # command     => 'ant deploy_services_artifacts',
+    # cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
+    command     => 'ant deploy',
+    cwd         => "${cspace_source_dir}",
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
     tag         => 'services',
     require     => [
-      Exec[ 'Build and deploy of Application layer source' ],
-      Exec[ 'Build of Services layer source' ],
       Exec[ 'Find Ant executable' ],
+      Exec[ 'Build and deploy via Application layer source' ],
+      Exec[ 'Build via Services layer source' ],
+    ],
+  }
+  
+  notify{ 'Creating databases':
+    message => 'Creating databases ...',
+    tag     => 'services',
+    before  => Exec [ 'Create databases via Services layer source' ],
+  }
+  
+  exec { 'Create databases via Services layer source':
+    command     => 'ant create_db',
+    cwd         => "${cspace_source_dir}",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    tag         => 'services',
+    require     => [
+      Exec[ 'Find Ant executable' ],
+      Exec[ 'Build and deploy via Application layer source' ],
+      Exec[ 'Build via Services layer source' ],
+      Exec[ 'Deploy via Services layer source' ],
+    ],
+  }
+  
+  notify{ 'Initializing default user accounts':
+    message => 'Initializing default user accounts and permissions ...',
+    tag     => 'services',
+    before  => Exec [ 'Initialize default user accounts via Services layer source' ],
+  }
+  
+  exec { 'Initialize default user accounts via Services layer source':
+    command     => 'ant import',
+    cwd         => "${cspace_source_dir}",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    tag         => 'services',
+    require     => [
+      Exec[ 'Find Ant executable' ],
+      Exec[ 'Build and deploy via Application layer source' ],
+      Exec[ 'Build via Services layer source' ],
+      Exec[ 'Deploy via Services layer source' ],
+      Exec[ 'Create databases via Services layer source' ],
     ],
   }
   
