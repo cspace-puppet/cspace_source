@@ -22,6 +22,8 @@
 # http://docs.puppetlabs.com/guides/environment.html
 # http://docs.puppetlabs.com/hiera/1/
 
+include cspace_environment::execpaths
+include cspace_environment::osfamily
 include cspace_tarball
 include cspace_user
 include cspace_user::env
