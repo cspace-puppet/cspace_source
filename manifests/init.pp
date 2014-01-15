@@ -52,12 +52,15 @@ class cspace_source(
   $exec_paths = [ '/bin', '/usr/bin' ],
   $source_dir_path = undef,
   $user_acct = $cspace_user::user_acct_name,
-  $collectionspace_release_version = "v${cspace_tarball::release_version}" ) {
+  $release_version = $cspace_tarball::release_version ) {
   
   validate_array($env_vars)
+  # By convention, CollectionSpace releases are tagged with a 'v{release number}' name;
+  # e.g. "v4.0" for release 4.0.
+  $collectionspace_release_version = "v${release_version}"
   
   # FIXME: Need to qualify by OS; this module currently assumes
-  # that it's running on a Linux platform
+  # that it's running on a Linux platform.
   
   # ---------------------------------------------------------
   # Verify presence of required executables
@@ -109,7 +112,7 @@ class cspace_source(
   # of the CollectionSpace admin user.
   else {
     $default_cspace_source_dir_name = 'cspace-source'
-    # FIXME: Hard-coded home directory location; could use $HOME if available
+    # FIXME: Uses hard-coded name for parent directory which contains user home directories.
     $default_cspace_source_dir = "/home/${user_acct}/${default_cspace_source_dir_name}"
     $cspace_source_dir = $default_cspace_source_dir
   }
