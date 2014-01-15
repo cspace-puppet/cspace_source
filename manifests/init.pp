@@ -257,7 +257,8 @@ class cspace_source(
   exec { 'Build via Services layer source':
     # Command below is a temporary placeholder during development
     # for the full build (very time consuming)
-    command     => $mvn_clean_cmd,
+    # command     => $mvn_clean_cmd,
+    command     => $mvn_clean_install_cmd,
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
