@@ -228,6 +228,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
+    logoutput   => on_failure,
     tag         => [ 'services', 'application' ],
     require     => [
       Exec[ 'Find Maven executable' ],
@@ -252,6 +253,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
+    logoutput   => true,
     tag         => 'services',
     require     => [
       Exec[ 'Find Maven executable' ],
@@ -275,6 +277,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
+    logoutput   => true,
     tag         => 'services',
     require     => [
       Exec[ 'Find Ant executable' ],
@@ -295,6 +298,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
+    logoutput   => on_failure,
     tag         => 'services',
     require     => [
       Exec[ 'Find Ant executable' ],
@@ -316,6 +320,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
+    logoutput   => true,
     tag         => 'services',
     require     => [
       Exec[ 'Find Ant executable' ],
