@@ -52,7 +52,7 @@ class cspace_source(
   $exec_paths = [ '/bin', '/usr/bin' ],
   $source_dir_path = undef,
   $user_acct = $cspace_user::user_acct_name,
-  $collectionspace_release_version = $cspace_tarball::release_version ) {
+  $collectionspace_release_version = "v${cspace_tarball::release_version}" ) {
   
   validate_array($env_vars)
   
