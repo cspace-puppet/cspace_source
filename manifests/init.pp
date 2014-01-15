@@ -279,6 +279,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     environment => $env_vars,
     user        => $user_acct,
     logoutput   => true,
+    timeout     => 900, # 900 seconds; e.g. 15 minutes
     tag         => 'services',
     require     => [
       Exec[ 'Find Ant executable' ],
