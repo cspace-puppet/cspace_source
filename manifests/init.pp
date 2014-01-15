@@ -265,6 +265,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     message => 'Deploying Services layer ...',
     tag     => 'services',
     before  => Exec [ 'Deploy via Services layer source' ],
+    require => Exec[ 'Build via Services layer source' ],
   }
   
   exec { 'Deploy via Services layer source':
@@ -290,6 +291,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     message => 'Creating databases ...',
     tag     => 'services',
     before  => Exec [ 'Create databases via Services layer source' ],
+    require => Exec[ 'Deploy via Services layer source' ],
   }
   
   exec { 'Create databases via Services layer source':
@@ -312,6 +314,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     message => 'Initializing default user accounts and permissions ...',
     tag     => 'services',
     before  => Exec [ 'Initialize default user accounts via Services layer source' ],
+    require => Exec[ 'Create databases via Services layer source' ],
   }
   
   exec { 'Initialize default user accounts via Services layer source':
