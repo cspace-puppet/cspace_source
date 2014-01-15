@@ -42,11 +42,17 @@
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
+include cspace_tarball
 include cspace_user
 include cspace_user::env
 include stdlib # for 'validate_array()'
 
-class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths = [ '/bin', '/usr/bin' ], $source_dir_path = undef, $user_acct = $cspace_user::user_acct_name ) {
+class cspace_source(
+  $env_vars = $cspace_user::env::cspace_env_vars,
+  $exec_paths = [ '/bin', '/usr/bin' ],
+  $source_dir_path = undef,
+  $user_acct = $cspace_user::user_acct_name,
+  $collectionspace_release_version = $cspace_tarball::release_version ) {
   
   validate_array($env_vars)
   
@@ -142,7 +148,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => 'master',
+    revision => $collectionspace_release_version,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => File[ 'Ensure CollectionSpace source directory' ],
@@ -161,7 +167,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => 'master',
+    revision => $collectionspace_release_version,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => File [ 'Ensure CollectionSpace source directory' ],
@@ -180,7 +186,7 @@ class cspace_source( $env_vars = $cspace_user::env::cspace_env_vars, $exec_paths
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => 'master',
+    revision => $collectionspace_release_version,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => File[ 'Ensure CollectionSpace source directory' ],
