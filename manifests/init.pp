@@ -271,7 +271,7 @@ class cspace_source(
     environment => $env_vars,
     user        => $user_acct,
     logoutput   => true,
-    timeout     => 900, # 900 seconds; e.g. 15 minutes
+    timeout     => 1800, # 1800 seconds; e.g. 30 minutes
     tag         => 'services',
     require     => [
       Exec[ 'Find Maven executable' ],
