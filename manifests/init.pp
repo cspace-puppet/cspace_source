@@ -48,19 +48,19 @@ include cspace_user::env
 include stdlib # for 'validate_array()'
 
 class cspace_source(
-  $env_vars = $cspace_user::env::cspace_env_vars,
-  $exec_paths = [ '/bin', '/usr/bin' ],
-  $source_dir_path = undef,
-  $user_acct = $cspace_user::user_acct_name,
+  $env_vars        = $cspace_user::env::cspace_env_vars,
+  $exec_paths      = [ '/bin', '/usr/bin' ],
+  $source_dir_path = '',
+  $user_acct       = $cspace_user::user_acct_name,
   $release_version = $cspace_tarball::release_version ) {
+    
+  # FIXME: Need to qualify this module's resources by OS; this module currently assumes
+  # that it's running on a Linux platform.
   
   validate_array($env_vars)
   # By convention, CollectionSpace releases are tagged with a 'v{release number}' name;
   # e.g. "v4.0" for release 4.0.
   $collectionspace_release_version = "v${release_version}"
-  
-  # FIXME: Need to qualify by OS; this module currently assumes
-  # that it's running on a Linux platform.
   
   # ---------------------------------------------------------
   # Verify presence of required executables
@@ -96,14 +96,15 @@ class cspace_source(
   
   # Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
   # will intrinsically verify that a Git client exists ("Add autorequire for
-  # Package['git']"), so we don't need to independently verify its presence.
+  # Package['git']" appears in that version's release notes), so we don't need
+  # to independently verify its presence.
   
   # ---------------------------------------------------------
   # Ensure presence of a directory to contain source code
   # ---------------------------------------------------------
   
   # Use the provided source code directory, if available.
-  if $source_dir_path != undef {
+  if ( ($source_dir_path != undef) and (! empty($source_dir_path)) ) {
     $cspace_source_dir = $source_dir_path
     # FIXME: Verify the existence of, and (optionally) the requisite
     # access privileges to, the provided source code directory.
@@ -111,8 +112,10 @@ class cspace_source(
   # Otherwise, use a directory in the home directory
   # of the CollectionSpace admin user.
   else {
-    $default_cspace_source_dir_name = 'cspace-source'
-    # FIXME: Uses hard-coded name for parent directory which contains user home directories.
+    $default_cspace_source_dir_name = 'cspace_source'
+    # TODO: The following merely uses a hard-coded name for the parent directory which
+    # contains user home directories. There may yet be a better (per-platform)
+    # approach for identifying the home directory of the CollectionSpace admin user.
     $default_cspace_source_dir = "/home/${user_acct}/${default_cspace_source_dir_name}"
     $cspace_source_dir = $default_cspace_source_dir
   }
@@ -203,8 +206,6 @@ class cspace_source(
     command   => "chown -R ${user_acct}: ${cspace_source_dir}",
     path      => $exec_paths,
     tag       => [ 'services', 'application', 'ui' ],
-    # TODO: There may be a better way to do this; 'subscribe'-ing
-    # to each layer's Vcsrepo resource didn't work here as intended.
     require   => [
       Vcsrepo[ 'Download Application layer source code' ],
       Vcsrepo[ 'Download Services layer source code' ],
@@ -270,11 +271,12 @@ class cspace_source(
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
-    logoutput   => true,
+    logoutput   => on_failure,
     timeout     => 1800, # 1800 seconds; e.g. 30 minutes
     tag         => 'services',
     require     => [
       Exec[ 'Find Maven executable' ],
+      Exec[ 'Build and deploy via Application layer source' ],
       Vcsrepo[ 'Download Services layer source code' ],
     ],
   }
@@ -323,7 +325,9 @@ class cspace_source(
     tag         => 'services',
     require     => [
       Exec[ 'Find Ant executable' ],
+      Exec[ 'Find Maven executable' ],
       Exec[ 'Build and deploy via Application layer source' ],
+      Vcsrepo[ 'Download Services layer source code' ],
       Exec[ 'Build via Services layer source' ],
       Exec[ 'Deploy via Services layer source' ],
     ],
@@ -346,7 +350,9 @@ class cspace_source(
     tag         => 'services',
     require     => [
       Exec[ 'Find Ant executable' ],
+      Exec[ 'Find Maven executable' ],
       Exec[ 'Build and deploy via Application layer source' ],
+      Vcsrepo[ 'Download Services layer source code' ],
       Exec[ 'Build via Services layer source' ],
       Exec[ 'Deploy via Services layer source' ],
       Exec[ 'Create databases via Services layer source' ],
