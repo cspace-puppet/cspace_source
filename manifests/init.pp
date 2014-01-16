@@ -63,43 +63,6 @@ class cspace_source(
   $collectionspace_release_version = "v${release_version}"
   
   # ---------------------------------------------------------
-  # Verify presence of required executables
-  # ---------------------------------------------------------
-  
-  # FIXME: Replace or augment with cross-platform compatible
-  # methods for finding executables, including on Windows.
-    
-  notify{ 'Checking for build tools':
-    message => 'Checking for availability of Ant and Maven build tools ...',
-    tag     => [ 'services', 'application', 'ui' ],
-    before  => [
-        Exec [ 'Find Ant executable' ],
-        Exec [ 'Find Maven executable' ],
-    ],
-  }
-  
-  exec { 'Find Ant executable':
-    command   => '/bin/sh -c "command -v ant"',
-    path      => $exec_paths,
-    logoutput => true,
-    tag       => [ 'services', 'application', 'ui' ],
-    before => Notify[ 'Creating source directory' ],
-  }
-  
-  exec { 'Find Maven executable':
-    command   => '/bin/sh -c "command -v mvn"',
-    path      => $exec_paths,
-    logoutput => true,
-    tag       => [ 'services', 'application', 'ui' ],
-    before => Notify[ 'Creating source directory' ],
-  }
-  
-  # Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
-  # will intrinsically verify that a Git client exists ("Add autorequire for
-  # Package['git']" appears in that version's release notes), so we don't need
-  # to independently verify its presence.
-  
-  # ---------------------------------------------------------
   # Ensure presence of a directory to contain source code
   # ---------------------------------------------------------
   
@@ -123,7 +86,6 @@ class cspace_source(
   notify{ 'Creating source directory':
     message => "Creating ${cspace_source_dir} directory to hold CollectionSpace source code, if not present ...",
     tag     => [ 'services', 'application', 'ui' ],
-    before  => File [ 'Ensure CollectionSpace source directory' ],
   }
   
   file { 'Ensure CollectionSpace source directory':
@@ -131,6 +93,7 @@ class cspace_source(
     path    => $cspace_source_dir,
     owner   => $user_acct,
     tag     => [ 'services', 'application', 'ui' ],
+    require => Notify [ 'Creating source directory' ],
   }
   
   # ---------------------------------------------------------
@@ -146,9 +109,8 @@ class cspace_source(
   notify{ 'Downloading Application layer':
     message => 'Downloading Application layer source code ...',
     tag     => [ 'services', 'application' ],
-    before  => Vcsrepo [ 'Download Application layer source code' ],
     require => File [ 'Ensure CollectionSpace source directory' ],
-  }
+  } 
   
   vcsrepo { 'Download Application layer source code':
     ensure   => latest,
@@ -157,7 +119,10 @@ class cspace_source(
     revision => $collectionspace_release_version,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
-    require  => File[ 'Ensure CollectionSpace source directory' ],
+    require  => [
+      File[ 'Ensure CollectionSpace source directory' ],
+      Notify[ 'Downloading Application layer' ]
+    ]
   }
 
   # Download the Services layer source code
@@ -165,7 +130,6 @@ class cspace_source(
   notify{ 'Downloading Services layer':
     message => 'Downloading Services layer source code ...',
     tag     => 'services',
-    before  => Vcsrepo [ 'Download Services layer source code' ],
     require  => File [ 'Ensure CollectionSpace source directory' ],
   }
   
@@ -176,7 +140,10 @@ class cspace_source(
     revision => $collectionspace_release_version,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
-    require  => File [ 'Ensure CollectionSpace source directory' ],
+    require  => [
+      File[ 'Ensure CollectionSpace source directory' ],
+      Notify[ 'Downloading Services layer' ]
+    ]
   }
   
   # Download the UI layer source code
@@ -184,7 +151,6 @@ class cspace_source(
   notify{ 'Downloading UI layer':
     message => 'Downloading UI layer source code ...',
     tag     => 'ui',
-    before  => Vcsrepo [ 'Download UI layer source code' ],
     require => File [ 'Ensure CollectionSpace source directory' ],
   }
   
@@ -195,7 +161,10 @@ class cspace_source(
     revision => $collectionspace_release_version,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
-    require  => File[ 'Ensure CollectionSpace source directory' ],
+    require  => [
+      File[ 'Ensure CollectionSpace source directory' ],
+      Notify[ 'Downloading UI layer' ]
+    ]
   }
   
   # ---------------------------------------------------------
@@ -214,9 +183,36 @@ class cspace_source(
   }
   
   # ---------------------------------------------------------
+  # Verify presence of required executables
+  # ---------------------------------------------------------
+  
+  # FIXME: Replace or augment with cross-platform compatible
+  # methods for finding executables, including on Windows.
+    
+  exec { 'Find Ant executable':
+    command   => '/bin/sh -c "command -v ant"',
+    path      => $exec_paths,
+    logoutput => true,
+    tag       => [ 'services', 'application', 'ui' ],
+  }
+  
+  exec { 'Find Maven executable':
+    command   => '/bin/sh -c "command -v mvn"',
+    path      => $exec_paths,
+    logoutput => true,
+    tag       => [ 'services', 'application', 'ui' ],
+  }
+  
+  # Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
+  # will intrinsically verify that a Git client exists ("Add autorequire for
+  # Package['git']" appears in that version's release notes), so we don't need
+  # to independently verify its presence.
+  
+  # ---------------------------------------------------------
   # Build and deploy CollectionSpace's layers
   # ---------------------------------------------------------
   
+  # FIXME: Make it possible to perform builds without 'clean'
   $mvn_clean_cmd = 'mvn clean'
   $mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
   
@@ -229,14 +225,13 @@ class cspace_source(
   notify{ 'Building Application layer':
     message => 'Building and deploying Application layer ...',
     tag     => [ 'services', 'application' ],
-    before  => Exec [ 'Build and deploy via Application layer source' ],
     require => [
       Vcsrepo[ 'Download Application layer source code' ],
       Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
     ]
   }
   
-  exec { 'Build and deploy via Application layer source':
+  exec { 'Build and deploy from Application layer source':
     command     => $mvn_clean_install_cmd,
     cwd         => "${cspace_source_dir}/application",
     path        => $exec_paths,
@@ -245,8 +240,11 @@ class cspace_source(
     logoutput   => on_failure,
     tag         => [ 'services', 'application' ],
     require     => [
+      Exec[ 'Find Ant executable' ],
       Exec[ 'Find Maven executable' ],
       Vcsrepo[ 'Download Application layer source code' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
+      Notify[ 'Building Application layer' ]
     ],
   }
 
@@ -255,16 +253,16 @@ class cspace_source(
   notify{ 'Building Services layer':
     message => 'Building Services layer ...',
     tag     => 'services',
-    before  => Exec [ 'Build via Services layer source' ],
+    before  => Exec [ 'Build from Services layer source' ],
     require => [
       Vcsrepo[ 'Download Services layer source code' ],
-      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
+      Exec[ 'Build and deploy from Application layer source' ],
     ]
   }
   
-  exec { 'Build via Services layer source':
-    # Command below is a temporary placeholder during development
-    # for the full build (very time consuming)
+  exec { 'Build from Services layer source':
+    # Command below is a temporary substitute during development
+    # in place of a full build (which can be very time consuming):
     # command     => $mvn_clean_cmd,
     command     => $mvn_clean_install_cmd,
     cwd         => "${cspace_source_dir}/services",
@@ -275,22 +273,23 @@ class cspace_source(
     timeout     => 1800, # 1800 seconds; e.g. 30 minutes
     tag         => 'services',
     require     => [
-      Exec[ 'Find Maven executable' ],
-      Exec[ 'Build and deploy via Application layer source' ],
       Vcsrepo[ 'Download Services layer source code' ],
+      Exec[ 'Build and deploy from Application layer source' ],
+      Notify[ 'Building Services layer' ]
     ],
   }
 
   notify{ 'Deploying Services layer':
     message => 'Deploying Services layer ...',
     tag     => 'services',
-    before  => Exec [ 'Deploy via Services layer source' ],
-    require => Exec[ 'Build via Services layer source' ],
+    require => [
+      Exec[ 'Build from Services layer source' ],
+    ]
   }
   
-  exec { 'Deploy via Services layer source':
-    # Command below is a temporary placeholder during development
-    # for the full deploy (very time consuming)
+  exec { 'Deploy from Services layer source':
+    # Command and cwd below are a temporary substitute during development
+    # in place of a full deploy (which can be very time consuming):
     # command     => 'ant deploy_services_artifacts',
     # cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
     command     => 'ant deploy',
@@ -302,20 +301,18 @@ class cspace_source(
     timeout     => 1800, # 1800 seconds; e.g. 30 minutes
     tag         => 'services',
     require     => [
-      Exec[ 'Find Ant executable' ],
-      Exec[ 'Build and deploy via Application layer source' ],
-      Exec[ 'Build via Services layer source' ],
+      Exec[ 'Build from Services layer source' ],
+      Notify[ 'Deploying Services layer' ]
     ],
   }
   
   notify{ 'Creating databases':
     message => 'Creating databases ...',
     tag     => 'services',
-    before  => Exec [ 'Create databases via Services layer source' ],
-    require => Exec[ 'Deploy via Services layer source' ],
+    require => Exec[ 'Deploy from Services layer source' ],
   }
   
-  exec { 'Create databases via Services layer source':
+  exec { 'Create databases from Services layer source':
     command     => 'ant create_db',
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
@@ -324,23 +321,18 @@ class cspace_source(
     logoutput   => on_failure,
     tag         => 'services',
     require     => [
-      Exec[ 'Find Ant executable' ],
-      Exec[ 'Find Maven executable' ],
-      Exec[ 'Build and deploy via Application layer source' ],
-      Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build via Services layer source' ],
-      Exec[ 'Deploy via Services layer source' ],
+      Exec[ 'Deploy from Services layer source' ],
+      Notify[ 'Creating databases' ]
     ],
   }
   
   notify{ 'Initializing default user accounts':
     message => 'Initializing default user accounts and permissions ...',
     tag     => 'services',
-    before  => Exec [ 'Initialize default user accounts via Services layer source' ],
-    require => Exec[ 'Create databases via Services layer source' ],
+    require => Exec[ 'Create databases from Services layer source' ],
   }
   
-  exec { 'Initialize default user accounts via Services layer source':
+  exec { 'Initialize default user accounts from Services layer source':
     command     => 'ant import',
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
@@ -349,13 +341,8 @@ class cspace_source(
     logoutput   => true,
     tag         => 'services',
     require     => [
-      Exec[ 'Find Ant executable' ],
-      Exec[ 'Find Maven executable' ],
-      Exec[ 'Build and deploy via Application layer source' ],
-      Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build via Services layer source' ],
-      Exec[ 'Deploy via Services layer source' ],
-      Exec[ 'Create databases via Services layer source' ],
+      Exec[ 'Create databases from Services layer source' ],
+      Notify[ 'Initializing default user accounts' ]
     ],
   }
   
