@@ -24,7 +24,7 @@
 
 include cspace_environment::execpaths
 include cspace_environment::osfamily
-include cspace_tarball
+include cspace_tarball::globals
 include cspace_user
 include cspace_user::env
 

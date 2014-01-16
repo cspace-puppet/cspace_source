@@ -42,7 +42,7 @@
 # Test standlone with a reference to the modulepath in which that module is installed; e.g.
 # puppet apply --modulepath=/etc/puppet/modules ./tests/init.pp
 
-include cspace_tarball
+include cspace_tarball::globals
 include cspace_user
 include cspace_user::env
 include stdlib # for 'validate_array()'
@@ -52,7 +52,7 @@ class cspace_source(
   $exec_paths      = [ '/bin', '/usr/bin' ],
   $source_dir_path = '',
   $user_acct       = $cspace_user::user_acct_name,
-  $release_version = $cspace_tarball::release_version ) {
+  $release_version = $cspace_tarball::globals::release_version ) {
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
   # that it's running on a Linux platform.
