@@ -205,9 +205,10 @@ class cspace_source(
     tag       => [ 'services', 'application', 'ui' ],
     # TODO: There may be a better way to do this; 'subscribe'-ing
     # to each layer's Vcsrepo resource didn't work here as intended.
-    before    => [
-      Notify[ 'Building Application layer' ],
-      Notify[ 'Building Services layer' ],
+    require   => [
+      Vcsrepo[ 'Download Application layer source code' ],
+      Vcsrepo[ 'Download Services layer source code' ],
+      Vcsrepo[ 'Download UI layer source code' ],
     ]
   }
   
@@ -228,7 +229,10 @@ class cspace_source(
     message => 'Building and deploying Application layer ...',
     tag     => [ 'services', 'application' ],
     before  => Exec [ 'Build and deploy via Application layer source' ],
-    require => Vcsrepo[ 'Download Application layer source code' ],
+    require => [
+      Vcsrepo[ 'Download Application layer source code' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
+    ]
   }
   
   exec { 'Build and deploy via Application layer source':
@@ -251,7 +255,10 @@ class cspace_source(
     message => 'Building Services layer ...',
     tag     => 'services',
     before  => Exec [ 'Build via Services layer source' ],
-    require => Vcsrepo[ 'Download Services layer source code' ],
+    require => [
+      Vcsrepo[ 'Download Services layer source code' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
+    ]
   }
   
   exec { 'Build via Services layer source':
