@@ -212,9 +212,18 @@ class cspace_source(
   # Build and deploy CollectionSpace's layers
   # ---------------------------------------------------------
   
-  # FIXME: Make it possible to perform builds without 'clean'
-  $mvn_clean_cmd = 'mvn clean'
-  $mvn_clean_install_cmd = "${mvn_clean_cmd} install -DskipTests"
+  # FIXME: Make it possible to selectively perform builds without
+  # running 'mvn clean'.  This will preserve existing build artifacts
+  # and make the build complete faster, at the expense of not performing
+  # a reproducible, clean build from scratch.
+  
+  $mvn_cmd                = 'mvn'
+  $mvn_clean_phase        = 'clean'
+  $mvn_install_phase      = 'install'
+  $mvn_no_tests_arg       = '-DskipTests'
+  $mvn_clean_cmd          = "${mvn_cmd} ${mvn_clean_phase}"
+  $mvn_clean_install_cmd  = "${mvn_cmd} ${mvn_clean_phase} ${mvn_install_phase} ${no_tests_arg}"
+  $mvn_install_cmd        = "${mvn_cmd} ${mvn_install_phase} ${no_tests_arg}"
   
   # Build and deploy the Application layer
 
@@ -249,11 +258,40 @@ class cspace_source(
   }
 
   # Build and deploy the Services layer
+
+  notify{ 'Cleaning Services layer source':
+    message => 'Cleaning Services layer source (removing old target directories4) ...',
+    tag     => 'services',
+    # Use 'before' here, rather than 'require' in the target resource, in case
+    # this 'clean-specific' resource might not be run on some occasions.
+    before  => Notify [ 'Building Services layer' ],
+    require => [
+      Vcsrepo[ 'Download Services layer source code' ],
+      Exec[ 'Build and deploy from Application layer source' ],
+    ]
+  }
   
+  exec { 'Clean Services layer source':
+    command     => $mvn_clean_cmd,
+    cwd         => "${cspace_source_dir}/services",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    logoutput   => on_failure,
+    tag         => 'services',
+    # Use 'before' here, rather than 'require' in the target resource, in case
+    # this 'clean-specific' resource might not be run on some occasions.
+    before      => Notify [ 'Building Services layer' ],
+    require     => [
+      Vcsrepo[ 'Download Services layer source code' ],
+      Exec[ 'Build and deploy from Application layer source' ],
+      Notify[ 'Cleaning Services layer source' ]
+    ],
+  }
+    
   notify{ 'Building Services layer':
     message => 'Building Services layer ...',
     tag     => 'services',
-    before  => Exec [ 'Build from Services layer source' ],
     require => [
       Vcsrepo[ 'Download Services layer source code' ],
       Exec[ 'Build and deploy from Application layer source' ],
@@ -261,10 +299,7 @@ class cspace_source(
   }
   
   exec { 'Build from Services layer source':
-    # Command below is a temporary substitute during development
-    # in place of a full build (which can be very time consuming):
-    # command     => $mvn_clean_cmd,
-    command     => $mvn_clean_install_cmd,
+    command     => $mvn_install_cmd,
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
