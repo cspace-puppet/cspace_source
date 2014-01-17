@@ -260,7 +260,7 @@ class cspace_source(
   # Build and deploy the Services layer
 
   notify{ 'Cleaning Services layer source':
-    message => 'Cleaning Services layer source (removing old target directories4) ...',
+    message => 'Cleaning Services layer source (removing old target directories) ...',
     tag     => 'services',
     # Use 'before' here, rather than 'require' in the target resource, in case
     # this 'clean-specific' resource might not be run on some occasions.
