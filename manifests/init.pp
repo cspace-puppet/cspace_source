@@ -222,8 +222,8 @@ class cspace_source(
   $mvn_install_phase      = 'install'
   $mvn_no_tests_arg       = '-DskipTests'
   $mvn_clean_cmd          = "${mvn_cmd} ${mvn_clean_phase}"
-  $mvn_clean_install_cmd  = "${mvn_cmd} ${mvn_clean_phase} ${mvn_install_phase} ${no_tests_arg}"
-  $mvn_install_cmd        = "${mvn_cmd} ${mvn_install_phase} ${no_tests_arg}"
+  $mvn_clean_install_cmd  = "${mvn_cmd} ${mvn_clean_phase} ${mvn_install_phase} ${mvn_no_tests_arg}"
+  $mvn_install_cmd        = "${mvn_cmd} ${mvn_install_phase} ${mvn_no_tests_arg}"
   
   # Build and deploy the Application layer
 
