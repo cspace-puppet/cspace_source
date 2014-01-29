@@ -47,20 +47,22 @@ include cspace_user
 include cspace_user::env
 include stdlib # for 'validate_array()'
 
+# By convention, CollectionSpace releases are tagged with a v{release number} name;
+# e.g. 'v4.0' for release 4.0; hence the prefixing of a 'v' to the 'release_version'
+# global below, which is used as the default value for the 'source_code_revision' parameter.
+
 class cspace_source(
-  $env_vars        = $cspace_user::env::cspace_env_vars,
-  $exec_paths      = [ '/bin', '/usr/bin' ],
-  $source_dir_path = '',
-  $user_acct       = $cspace_user::user_acct_name,
-  $release_version = $cspace_tarball::globals::release_version ) {
+  $env_vars             = $cspace_user::env::cspace_env_vars,
+  $exec_paths           = [ '/bin', '/usr/bin' ],
+  $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' ),
+  $source_dir_path      = '',
+  $user_acct            = $cspace_user::user_acct_name,
+ ) {
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
   # that it's running on a Linux platform.
   
   validate_array($env_vars)
-  # By convention, CollectionSpace releases are tagged with a 'v{release number}' name;
-  # e.g. "v4.0" for release 4.0.
-  $collectionspace_release_version = "v${release_version}"
   
   # ---------------------------------------------------------
   # Ensure presence of a directory to contain source code
@@ -116,7 +118,7 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => $collectionspace_release_version,
+    revision => $collectionspace_source_code_revision,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => [
@@ -137,7 +139,7 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => $collectionspace_release_version,
+    revision => $collectionspace_source_code_revision,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => [
@@ -158,7 +160,7 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => $collectionspace_release_version,
+    revision => $collectionspace_source_code_revision,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => [
