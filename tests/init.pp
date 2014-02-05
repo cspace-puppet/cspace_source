@@ -32,7 +32,7 @@ class { 'cspace_source':
   # Temporary override of the current version; e.g. v4.0, due to
   # http://issues.collectionspace.org/browse/CSPACE-6294
   # The (v4.1) master branch will soon contain fixes for that issue.
-  $source_code_revision => 'master',
+  source_code_revision => 'master',
 }
 
 notice( "CollectionSpace source code directory is ${cspace_source::cspace_source_dir}" )
