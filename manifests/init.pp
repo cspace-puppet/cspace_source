@@ -334,7 +334,7 @@ class cspace_source(
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
-    logoutput   => true,
+    logoutput   => on_failure,
     timeout     => 1800, # 1800 seconds; e.g. 30 minutes
     tag         => 'services',
     require     => [
@@ -375,7 +375,7 @@ class cspace_source(
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
-    logoutput   => true,
+    logoutput   => on_failure,
     tag         => 'services',
     require     => [
       Exec[ 'Create databases from Services layer source' ],
