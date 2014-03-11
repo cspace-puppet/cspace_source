@@ -57,7 +57,7 @@ class cspace_source(
   $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' ),
   $source_dir_path      = '',
   $user_acct            = $cspace_user::user_acct_name,
- ) {
+  ) {
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
   # that it's running on a Linux platform.
@@ -118,7 +118,7 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => $collectionspace_source_code_revision,
+    revision => $::collectionspace_source_code_revision,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => [
@@ -130,8 +130,8 @@ class cspace_source(
   # Download the Services layer source code
   
   notify{ 'Downloading Services layer':
-    message => 'Downloading Services layer source code ...',
-    tag     => 'services',
+    message  => 'Downloading Services layer source code ...',
+    tag      => 'services',
     require  => File [ 'Ensure CollectionSpace source directory' ],
   }
   
@@ -139,7 +139,7 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => $collectionspace_source_code_revision,
+    revision => $::collectionspace_source_code_revision,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => [
@@ -160,7 +160,7 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => $collectionspace_source_code_revision,
+    revision => $::collectionspace_source_code_revision,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => [
@@ -177,6 +177,7 @@ class cspace_source(
     command   => "chown -R ${user_acct}: ${cspace_source_dir}",
     path      => $exec_paths,
     tag       => [ 'services', 'application', 'ui' ],
+    logoutput => on_failure,
     require   => [
       Vcsrepo[ 'Download Application layer source code' ],
       Vcsrepo[ 'Download Services layer source code' ],
