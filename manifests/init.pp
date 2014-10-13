@@ -104,7 +104,7 @@ class cspace_source(
   
   # Download the Application layer source code
   
-  # The Services layer build is dependent on the Application
+  # The Services layer deploy is dependent on the Application
   # layer build, so Application layer source code is downloaded
   # even when this manifest is invoked with the 'services' tag. 
     
@@ -228,39 +228,14 @@ class cspace_source(
   $mvn_clean_install_cmd  = "${mvn_cmd} ${mvn_clean_phase} ${mvn_install_phase} ${mvn_no_tests_arg}"
   $mvn_install_cmd        = "${mvn_cmd} ${mvn_install_phase} ${mvn_no_tests_arg}"
   
-  # Build and deploy the Application layer
-
-  # The Services layer build is dependent on the Application
-  # layer build, so the Application layer build is performed
-  # even when this manifest is invoked with the 'services' tag. 
-    
-  notify{ 'Building Application layer':
-    message => 'Building and deploying Application layer ...',
-    tag     => [ 'services', 'application' ],
-    require => [
-      Vcsrepo[ 'Download Application layer source code' ],
-      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
-    ]
-  }
+  # Build the Services layer
   
-  exec { 'Build and deploy from Application layer source':
-    command     => $mvn_clean_install_cmd,
-    cwd         => "${cspace_source_dir}/application",
-    path        => $exec_paths,
-    environment => $env_vars,
-    user        => $user_acct,
-    logoutput   => on_failure,
-    tag         => [ 'services', 'application' ],
-    require     => [
-      Exec[ 'Find Ant executable' ],
-      Exec[ 'Find Maven executable' ],
-      Vcsrepo[ 'Download Application layer source code' ],
-      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
-      Notify[ 'Building Application layer' ]
-    ],
-  }
-
-  # Build and deploy the Services layer
+  # The Application layer build is dependent on the Services layer build
+  # for some of its artifacts - currently for the 'common-api' module -
+  # so the Services layer needs to be built before the Application layer.
+  #
+  # This will generate those Services artifacts in the local Maven repository,
+  # so the Application layer can access them.
 
   notify{ 'Cleaning Services layer source':
     message => 'Cleaning Services layer source (removing old target directories) ...',
@@ -270,7 +245,7 @@ class cspace_source(
     before  => Notify [ 'Building Services layer' ],
     require => [
       Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build and deploy from Application layer source' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
     ]
   }
   
@@ -317,6 +292,40 @@ class cspace_source(
     ],
   }
 
+  # Build and deploy the Application layer
+
+  # The Services layer deploy is dependent on the Application
+  # layer build, so the Application layer build is performed
+  # even when this manifest is invoked with the 'services' tag. 
+    
+  notify{ 'Building Application layer':
+    message => 'Building and deploying Application layer ...',
+    tag     => [ 'services', 'application' ],
+    require => [
+      Vcsrepo[ 'Download Application layer source code' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
+    ]
+  }
+  
+  exec { 'Build and deploy from Application layer source':
+    command     => $mvn_clean_install_cmd,
+    cwd         => "${cspace_source_dir}/application",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    logoutput   => on_failure,
+    tag         => [ 'services', 'application' ],
+    require     => [
+      Exec[ 'Find Ant executable' ],
+      Exec[ 'Find Maven executable' ],
+      Vcsrepo[ 'Download Application layer source code' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
+      Notify[ 'Building Application layer' ]
+    ],
+  }
+  
+  # Deploy the Services layer
+
   notify{ 'Deploying Services layer':
     message => 'Deploying Services layer ...',
     tag     => 'services',
@@ -340,6 +349,7 @@ class cspace_source(
     tag         => 'services',
     require     => [
       Exec[ 'Build from Services layer source' ],
+      Exec[ 'Build and deploy from Application layer source' ],
       Notify[ 'Deploying Services layer' ]
     ],
   }
