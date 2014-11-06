@@ -63,8 +63,8 @@ class cspace_source(
   # based on the current release version. This makes it possible for the
   # installer to build from tags that don't follow the naming convention
   # for release versions, while still defaulting to the current release.
-  if ( ($::source_code_revision == undef) or ( empty($::source_code_revision)) ) {
-    $::source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
+  if ( ($source_code_revision == undef) or ( empty($source_code_revision)) ) {
+    $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
   }
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
