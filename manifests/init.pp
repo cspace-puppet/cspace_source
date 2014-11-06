@@ -313,12 +313,31 @@ class cspace_source(
     require     => Notify[ 'Building Application layer' ],
   }
   
+  # Build and deploy the UI layer
+  
+  notify{ 'Building UI layer':
+    message => 'Building and deploying UI layer ...',
+    tag     => 'ui',
+    require => Exec [ 'Build and deploy from Application layer source' ],
+  }
+  
+  exec { 'Build and deploy from UI layer source':
+    command     => $mvn_clean_install_cmd,
+    cwd         => "${cspace_source_dir}/ui",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    logoutput   => on_failure,
+    tag         => 'ui',
+    require     => Notify[ 'Building UI layer' ],
+  }
+  
   # Deploy the Services layer
 
   notify{ 'Deploying Services layer':
     message => 'Deploying Services layer ...',
     tag     => 'services',
-    require => Exec[ 'Build and deploy from Application layer source' ],
+    require => Exec[ 'Build and deploy from UI layer source' ],
   }
   
   exec { 'Deploy from Services layer source':
@@ -370,9 +389,6 @@ class cspace_source(
     tag         => 'services',
     require     => Notify[ 'Initializing default user accounts' ],
   }
-  
-  # There is currently no UI layer build required: the tarball of the
-  # CollectionSpace Tomcat server folder contains a prebuilt UI layer.
 
 }
 
