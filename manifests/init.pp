@@ -54,14 +54,18 @@ include stdlib # for 'validate_array()'
 class cspace_source(
   $env_vars             = $cspace_user::env::cspace_env_vars,
   $exec_paths           = [ '/bin', '/usr/bin' ],
-  $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' ),
+  $source_code_revision = '',
   $source_dir_path      = '',
   $user_acct            = $cspace_user::user_acct_name,
   ) {
     
-  # FIXME: Accept the provided source_code_revision 'as is', and only default to
-  # a revision based on the current release version if not supplied. This will
-  # allow building from tags that don't follow the release version tag naming convention.
+  # Accept the source_code_revision as provided, with a fallback to a revision
+  # based on the current release version. This makes it possible for the
+  # installer to build from tags that don't follow the naming convention
+  # for release versions, while still defaulting to the current release.
+  if ( ($::source_code_revision == undef) or ( empty($::source_code_revision)) ) {
+    $::source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
+  }
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
   # that it's running on a Linux platform.
