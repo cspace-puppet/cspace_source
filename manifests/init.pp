@@ -54,15 +54,44 @@ include stdlib # for 'validate_array()'
 class cspace_source(
   $env_vars             = $cspace_user::env::cspace_env_vars,
   $exec_paths           = [ '/bin', '/usr/bin' ],
-  $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' ),
+  $source_code_revision = '',
   $source_dir_path      = '',
   $user_acct            = $cspace_user::user_acct_name,
   ) {
+    
+  # Accept the source_code_revision as provided, with a fallback to a revision
+  # based on the current release version. This makes it possible for the
+  # installer to build from tags that don't follow the naming convention
+  # for release versions, while still defaulting to the current release.
+  if ( ($source_code_revision == undef) or ( empty($source_code_revision)) ) {
+    $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
+  }
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
   # that it's running on a Linux platform.
   
   validate_array($env_vars)
+  
+  # ---------------------------------------------------------
+  # Verify presence of required executables
+  # ---------------------------------------------------------
+  
+  # FIXME: Replace or augment with cross-platform compatible
+  # methods for finding executables, including on Windows.
+    
+  exec { 'Find Ant executable':
+    command   => '/bin/sh -c "command -v ant"',
+    path      => $exec_paths,
+    logoutput => true,
+    tag       => [ 'services', 'application', 'ui' ],
+  }
+  
+  exec { 'Find Maven executable':
+    command   => '/bin/sh -c "command -v mvn"',
+    path      => $exec_paths,
+    logoutput => true,
+    tag       => [ 'services', 'application', 'ui' ],
+  }
   
   # ---------------------------------------------------------
   # Ensure presence of a directory to contain source code
@@ -102,9 +131,13 @@ class cspace_source(
   # Download CollectionSpace source code
   # ---------------------------------------------------------
   
+  # The following three groups of actions to download various
+  # pieces of CollectionSpace's source code may be run in any order;
+  # they are not dependent on one another.
+  
   # Download the Application layer source code
   
-  # The Services layer build is dependent on the Application
+  # The Services layer deploy is dependent on the Application
   # layer build, so Application layer source code is downloaded
   # even when this manifest is invoked with the 'services' tag. 
     
@@ -118,11 +151,10 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => $::collectionspace_source_code_revision,
+    revision => $::source_code_revision,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => [
-      File[ 'Ensure CollectionSpace source directory' ],
       Notify[ 'Downloading Application layer' ]
     ]
   }
@@ -139,11 +171,10 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => $::collectionspace_source_code_revision,
+    revision => $::source_code_revision,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => [
-      File[ 'Ensure CollectionSpace source directory' ],
       Notify[ 'Downloading Services layer' ]
     ]
   }
@@ -160,11 +191,10 @@ class cspace_source(
     ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => $::collectionspace_source_code_revision,
+    revision => $::source_code_revision,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => [
-      File[ 'Ensure CollectionSpace source directory' ],
       Notify[ 'Downloading UI layer' ]
     ]
   }
@@ -185,27 +215,6 @@ class cspace_source(
     ]
   }
   
-  # ---------------------------------------------------------
-  # Verify presence of required executables
-  # ---------------------------------------------------------
-  
-  # FIXME: Replace or augment with cross-platform compatible
-  # methods for finding executables, including on Windows.
-    
-  exec { 'Find Ant executable':
-    command   => '/bin/sh -c "command -v ant"',
-    path      => $exec_paths,
-    logoutput => true,
-    tag       => [ 'services', 'application', 'ui' ],
-  }
-  
-  exec { 'Find Maven executable':
-    command   => '/bin/sh -c "command -v mvn"',
-    path      => $exec_paths,
-    logoutput => true,
-    tag       => [ 'services', 'application', 'ui' ],
-  }
-  
   # Note: The 'vcsrepo' resource, starting with version 0.2.0 of 2013-11-13,
   # will intrinsically verify that a Git client exists ("Add autorequire for
   # Package['git']" appears in that version's release notes), so we don't need
@@ -216,61 +225,35 @@ class cspace_source(
   # ---------------------------------------------------------
   
   # FIXME: Make it possible to selectively perform builds without
-  # running 'mvn clean'.  This will preserve existing build artifacts
-  # and make the build complete faster, at the expense of not performing
-  # a reproducible, clean build from scratch.
+  # running 'mvn clean'.  This will preserve existing build artifacts,
+  # if any, and make the build complete faster, at the expense of not
+  # performing a reproducible, clean build from scratch each time.
   
   $mvn_cmd                = 'mvn'
   $mvn_clean_phase        = 'clean'
   $mvn_install_phase      = 'install'
   $mvn_no_tests_arg       = '-DskipTests'
+  $mvn_recreate_dbs_arg   = '-Drecreate_db=true'
   $mvn_clean_cmd          = "${mvn_cmd} ${mvn_clean_phase}"
   $mvn_clean_install_cmd  = "${mvn_cmd} ${mvn_clean_phase} ${mvn_install_phase} ${mvn_no_tests_arg}"
   $mvn_install_cmd        = "${mvn_cmd} ${mvn_install_phase} ${mvn_no_tests_arg}"
   
-  # Build and deploy the Application layer
-
-  # The Services layer build is dependent on the Application
-  # layer build, so the Application layer build is performed
-  # even when this manifest is invoked with the 'services' tag. 
-    
-  notify{ 'Building Application layer':
-    message => 'Building and deploying Application layer ...',
-    tag     => [ 'services', 'application' ],
-    require => [
-      Vcsrepo[ 'Download Application layer source code' ],
-      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
-    ]
-  }
+  # Build the Services layer
   
-  exec { 'Build and deploy from Application layer source':
-    command     => $mvn_clean_install_cmd,
-    cwd         => "${cspace_source_dir}/application",
-    path        => $exec_paths,
-    environment => $env_vars,
-    user        => $user_acct,
-    logoutput   => on_failure,
-    tag         => [ 'services', 'application' ],
-    require     => [
-      Exec[ 'Find Ant executable' ],
-      Exec[ 'Find Maven executable' ],
-      Vcsrepo[ 'Download Application layer source code' ],
-      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
-      Notify[ 'Building Application layer' ]
-    ],
-  }
-
-  # Build and deploy the Services layer
+  # The Application layer build is dependent on the Services layer build
+  # for some of its artifacts - currently for the 'common-api' module -
+  # so the Services layer needs to be built before the Application layer.
+  #
+  # This will generate those Services artifacts in the local Maven repository,
+  # so the Application layer can access them.
 
   notify{ 'Cleaning Services layer source':
     message => 'Cleaning Services layer source (removing old target directories) ...',
-    tag     => 'services',
-    # Use 'before' here, rather than 'require' in the target resource, in case
-    # this 'clean-specific' resource might not be run on some occasions.
-    before  => Notify [ 'Building Services layer' ],
+    tag     => [ 'services', 'application' ],
     require => [
-      Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build and deploy from Application layer source' ],
+      Exec[ 'Find Ant executable' ],
+      Exec[ 'Find Maven executable' ],
+      Exec [ 'Change ownership of source directory to CollectionSpace admin user' ],
     ]
   }
   
@@ -281,24 +264,18 @@ class cspace_source(
     environment => $env_vars,
     user        => $user_acct,
     logoutput   => on_failure,
-    tag         => 'services',
+    tag         => [ 'services', 'application' ],
+    require     => Notify[ 'Cleaning Services layer source' ],
     # Use 'before' here, rather than 'require' in the target resource, in case
-    # this 'clean-specific' resource might not be run on some occasions.
+    # this 'clean-specific' resource might not be run during all future sequences.
     before      => Notify [ 'Building Services layer' ],
-    require     => [
-      Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build and deploy from Application layer source' ],
-      Notify[ 'Cleaning Services layer source' ]
-    ],
   }
     
   notify{ 'Building Services layer':
     message => 'Building Services layer ...',
-    tag     => 'services',
-    require => [
-      Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build and deploy from Application layer source' ],
-    ]
+    tag     => [ 'services', 'application' ],
+    # This action is currently kicked off by the 'before' relationship
+    # metaparameter in the Exec [ 'Clean Services layer source' ], above.
   }
   
   exec { 'Build from Services layer source':
@@ -309,20 +286,58 @@ class cspace_source(
     user        => $user_acct,
     logoutput   => on_failure,
     timeout     => 1800, # 1800 seconds; e.g. 30 minutes
-    tag         => 'services',
-    require     => [
-      Vcsrepo[ 'Download Services layer source code' ],
-      Exec[ 'Build and deploy from Application layer source' ],
-      Notify[ 'Building Services layer' ]
-    ],
+    tag         => [ 'services', 'application' ],
+    require     => Notify[ 'Building Services layer' ],
   }
+
+  # Build and deploy the Application layer
+
+  # The Services layer deploy is dependent on the Application
+  # layer build, so the Application layer build is performed
+  # even when this manifest is invoked with the 'services' tag. 
+    
+  notify{ 'Building Application layer':
+    message => 'Building and deploying Application layer ...',
+    tag     => [ 'services', 'application' ],
+    require => Exec [ 'Build from Services layer source' ],
+  }
+  
+  exec { 'Build and deploy from Application layer source':
+    command     => $mvn_clean_install_cmd,
+    cwd         => "${cspace_source_dir}/application",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    logoutput   => on_failure,
+    tag         => [ 'services', 'application' ],
+    require     => Notify[ 'Building Application layer' ],
+  }
+  
+  # Build and deploy the UI layer
+  
+  notify{ 'Building UI layer':
+    message => 'Building and deploying UI layer ...',
+    tag     => 'ui',
+    require => Exec [ 'Build and deploy from Application layer source' ],
+  }
+  
+  exec { 'Build and deploy from UI layer source':
+    command     => $mvn_clean_install_cmd,
+    cwd         => "${cspace_source_dir}/ui",
+    path        => $exec_paths,
+    environment => $env_vars,
+    user        => $user_acct,
+    logoutput   => on_failure,
+    tag         => 'ui',
+    require     => Notify[ 'Building UI layer' ],
+  }
+  
+  # Deploy the Services layer
 
   notify{ 'Deploying Services layer':
     message => 'Deploying Services layer ...',
     tag     => 'services',
-    require => [
-      Exec[ 'Build from Services layer source' ],
-    ]
+    require => Exec[ 'Build and deploy from UI layer source' ],
   }
   
   exec { 'Deploy from Services layer source':
@@ -338,10 +353,7 @@ class cspace_source(
     logoutput   => on_failure,
     timeout     => 1800, # 1800 seconds; e.g. 30 minutes
     tag         => 'services',
-    require     => [
-      Exec[ 'Build from Services layer source' ],
-      Notify[ 'Deploying Services layer' ]
-    ],
+    require     => Notify[ 'Deploying Services layer' ],
   }
   
   notify{ 'Creating databases':
@@ -351,17 +363,14 @@ class cspace_source(
   }
   
   exec { 'Create databases from Services layer source':
-    command     => 'ant create_db',
+    command     => "ant create_db $mvn_recreate_dbs_arg",
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
     user        => $user_acct,
     logoutput   => on_failure,
     tag         => 'services',
-    require     => [
-      Exec[ 'Deploy from Services layer source' ],
-      Notify[ 'Creating databases' ]
-    ],
+    require     => Notify[ 'Creating databases' ],
   }
   
   notify{ 'Initializing default user accounts':
@@ -378,14 +387,8 @@ class cspace_source(
     user        => $user_acct,
     logoutput   => on_failure,
     tag         => 'services',
-    require     => [
-      Exec[ 'Create databases from Services layer source' ],
-      Notify[ 'Initializing default user accounts' ]
-    ],
+    require     => Notify[ 'Initializing default user accounts' ],
   }
-  
-  # There is currently no UI layer build required: the tarball of the
-  # CollectionSpace Tomcat server folder contains a prebuilt UI layer.
 
 }
 
