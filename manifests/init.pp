@@ -148,7 +148,9 @@ class cspace_source(
   } 
   
   vcsrepo { 'Download Application layer source code':
-    ensure   => latest,
+    ensure   => present,
+    # If targeting (unstable) master branch, can experiment with:
+    # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
     revision => $::source_code_revision,
@@ -168,7 +170,9 @@ class cspace_source(
   }
   
   vcsrepo { 'Download Services layer source code':
-    ensure   => latest,
+    ensure   => present,
+    # If targeting (unstable) master branch, can experiment with:
+    # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
     revision => $::source_code_revision,
@@ -188,7 +192,9 @@ class cspace_source(
   }
   
   vcsrepo { 'Download UI layer source code':
-    ensure   => latest,
+    ensure   => present,
+    # If targeting (unstable) master branch, can experiment with:
+    # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
     revision => $::source_code_revision,
