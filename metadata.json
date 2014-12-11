@@ -1,0 +1,12 @@
+{
+  "name": "collectionspace-cspace_source",
+  "version": "4.1.1",
+  "summary": "Manages source code trees used to build a CollectionSpace server installation",
+  "author": "CollectionSpace",
+  "dependencies": [
+    { "name": "puppetlabs/stdlib", "version_requirement": ">=4.0.0" }
+  ],
+  "source": "https://github.com/cspace-puppet/cspace_source.git",
+  "project_page": "http://wiki.collectionspace.org",
+  "license": " Educational Community License, Version 2.0"
+}
