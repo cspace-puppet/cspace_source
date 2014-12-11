@@ -29,7 +29,7 @@ include cspace_user
 include cspace_user::env
 
 class { 'cspace_source': 
-  source_code_revision => 'v4.1',
+  source_code_revision => 'v4.1.1',
   # For testing, can temporarily use bleeding-edge master branch
   # by substituting the following:
   # source_code_revision => 'master',
