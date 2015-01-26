@@ -52,20 +52,23 @@ include stdlib # for 'validate_array()'
 # global below, which is used as the default value for the 'source_code_revision' parameter.
 
 class cspace_source(
-  $env_vars             = $cspace_user::env::cspace_env_vars,
-  $exec_paths           = [ '/bin', '/usr/bin' ],
-  $source_code_revision = '',
-  $source_dir_path      = '',
-  $user_acct            = $cspace_user::user_acct_name,
+  $env_vars        = $cspace_user::env::cspace_env_vars,
+  $exec_paths      = [ '/bin', '/usr/bin' ],
+  $source_code_rev = '',
+  $source_dir_path = '',
+  $user_acct       = $cspace_user::user_acct_name,
   ) {
     
   # Accept the source_code_revision as provided, with a fallback to a revision
   # based on the current release version. This makes it possible for the
   # installer to build from tags that don't follow the naming convention
   # for release versions, while still defaulting to the current release.
-  if ( ($source_code_revision == undef) or ( empty($source_code_revision)) ) {
+  if ( ($source_code_rev == undef) or ( empty($source_code_rev)) ) {
     $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
+  } else {
+    $source_code_revision = $source_code_rev, '' )
   }
+    
     
   # FIXME: Need to qualify this module's resources by OS; this module currently assumes
   # that it's running on a Linux platform.
@@ -153,7 +156,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => $::source_code_revision,
+    revision => $source_code_revision,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => [
@@ -175,7 +178,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => $::source_code_revision,
+    revision => $source_code_revision,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => [
@@ -197,7 +200,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => $::source_code_revision,
+    revision => $source_code_revision,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => [
