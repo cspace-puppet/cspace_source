@@ -66,7 +66,7 @@ class cspace_source(
   if ( ($source_code_rev == undef) or ( empty($source_code_rev)) ) {
     $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
   } else {
-    $source_code_revision = $source_code_rev, '' )
+    $source_code_revision = $source_code_rev
   }
     
     
@@ -167,9 +167,9 @@ class cspace_source(
   # Download the Services layer source code
   
   notify{ 'Downloading Services layer':
-    message  => 'Downloading Services layer source code ...',
-    tag      => 'services',
-    require  => File [ 'Ensure CollectionSpace source directory' ],
+    message => 'Downloading Services layer source code ...',
+    tag     => 'services',
+    require => File [ 'Ensure CollectionSpace source directory' ],
   }
   
   vcsrepo { 'Download Services layer source code':
@@ -372,7 +372,7 @@ class cspace_source(
   }
   
   exec { 'Create databases from Services layer source':
-    command     => "ant create_db $mvn_recreate_dbs_arg",
+    command     => "ant create_db ${mvn_recreate_dbs_arg}",
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
