@@ -29,7 +29,7 @@ include cspace_user
 include cspace_user::env
 
 class { 'cspace_source': 
-  source_code_rev => $cspace_tarball::globals::release_version,
+  source_code_rev => join( [ 'v', $cspace_tarball::globals::release_version ], '' ),
   # For testing, can temporarily use bleeding-edge master branch
   # or specify a specific branch, tag, or commit by substituting
   # the following; e.g.
