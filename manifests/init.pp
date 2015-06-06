@@ -52,7 +52,6 @@ include stdlib # for 'validate_array()'
 # global below, which is used as the default value for the 'source_code_revision' parameter.
 
 class cspace_source(
-  $db_cspace_user  = $cspace_postgresql_server::db_cspace_user,
   $env_vars        = $cspace_user::env::cspace_env_vars,
   $exec_paths      = [ '/bin', '/usr/bin' ],
   $source_code_rev = '',
@@ -377,7 +376,7 @@ class cspace_source(
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
-    user        => $db_cspace_user,
+    user        => $user_acct,
     logoutput   => on_failure,
     tag         => 'services',
     require     => Notify[ 'Creating databases' ],
