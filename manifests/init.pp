@@ -109,7 +109,7 @@ class cspace_source(
   # Otherwise, use a directory in the home directory
   # of the CollectionSpace admin user.
   else {
-    $default_cspace_source_dir_name = 'cspace_source'
+    $default_cspace_source_dir_name = 'collectionspace-source'
     # TODO: The following merely uses a hard-coded name for the parent directory which
     # contains user home directories. There may yet be a better (per-platform)
     # approach for identifying the home directory of the CollectionSpace admin user.
