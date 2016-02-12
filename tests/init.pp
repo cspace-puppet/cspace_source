@@ -29,13 +29,16 @@ include cspace_user
 include cspace_user::env
 
 class { 'cspace_source': 
-  source_code_rev => join( [ 'v', $cspace_tarball::globals::release_version ], '' ),
-  # For testing, can temporarily use bleeding-edge master branch
-  # or specify a specific branch, tag, or commit by substituting
-  # the following; e.g.
+  # For testing, can temporarily use the (bleeding-edge) master branch,
+  # or specify another, different branch or commit, by uncommenting/adding
+  # a single line for 'source_code_rev', such as in the following examples:
+  #
   # source_code_rev => 'master',
-  # or
-  # source_code_rev => 'v4.1.1',
+  # 
+  # source_code_rev => 'v4.3-branch',
+  #
+  # Otherwise, the 'cspace_source' class, invoked by this test, will default
+  # to using the release branch for the current CollectionSpace release.
 }
 
 notice( "CollectionSpace source code directory is ${cspace_source::cspace_source_dir}" )
