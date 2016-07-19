@@ -66,9 +66,9 @@ class cspace_source(
   # installer to build from tags/branches that don't follow the naming convention
   # for release versions, while still defaulting to the current release.
   if ( ($source_code_rev == undef) or ( empty($source_code_rev)) ) {
-    $source_code_rev = join( [ 'v', $cspace_tarball::globals::release_version, $branch_suffix ], '' )
+    $source_code_rev_local = join( [ 'v', $cspace_tarball::globals::release_version, $branch_suffix ], '' )
   } else {
-    $source_code_rev = $source_code_rev
+    $source_code_rev_local = $source_code_rev
   }
     
     
@@ -158,7 +158,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => $source_code_rev,
+    revision => $source_code_rev_local,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => [
@@ -180,7 +180,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => $source_code_rev,
+    revision => $source_code_rev_local,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => [
@@ -202,7 +202,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => $source_code_rev,
+    revision => $source_code_rev_local,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => [
