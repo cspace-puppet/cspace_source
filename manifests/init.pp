@@ -48,10 +48,12 @@ include cspace_user::env
 include stdlib # for 'validate_array()'
 
 # By convention, CollectionSpace releases are tagged with a v{release number} name;
-# e.g. 'v4.0' for release 4.0; hence the prefixing of a 'v' to the 'release_version'
-# global below, which is used as the default value for the 'source_code_revision' parameter.
+# Also by convention, CollectionSpace creates a release branch with this format: v{release number}-branch
+# e.g. 'v4.4' for release tag for 4.4 and 'v4.4-branch' for the release branch; hence the prefixing of a 'v' to the 'release_version'
+# global below, which is used as the default value for the 'source_code_rev' parameter.
 
 class cspace_source(
+  $branch_suffix   = '-branch',
   $env_vars        = $cspace_user::env::cspace_env_vars,
   $exec_paths      = [ '/bin', '/usr/bin' ],
   $source_code_rev = '',
@@ -59,14 +61,14 @@ class cspace_source(
   $user_acct       = $cspace_user::user_acct_name,
   ) {
     
-  # Accept the source_code_revision as provided, with a fallback to a revision
+  # Accept the source_code_rev as provided, with a fallback to a revision
   # based on the current release version. This makes it possible for the
-  # installer to build from tags that don't follow the naming convention
+  # installer to build from tags/branches that don't follow the naming convention
   # for release versions, while still defaulting to the current release.
   if ( ($source_code_rev == undef) or ( empty($source_code_rev)) ) {
-    $source_code_revision = join( [ 'v', $cspace_tarball::globals::release_version ], '' )
+    $source_code_rev_local = join( [ 'v', $cspace_tarball::globals::release_version, $branch_suffix ], '' )
   } else {
-    $source_code_revision = $source_code_rev
+    $source_code_rev_local = $source_code_rev
   }
     
     
@@ -156,7 +158,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/application.git',
-    revision => $source_code_revision,
+    revision => $source_code_rev_local,
     path     => "${cspace_source_dir}/application",
     tag      => [ 'services', 'application' ],
     require  => [
@@ -178,7 +180,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/services.git',
-    revision => $source_code_revision,
+    revision => $source_code_rev_local,
     path     => "${cspace_source_dir}/services",
     tag      => 'services',
     require  => [
@@ -200,7 +202,7 @@ class cspace_source(
     # ensure   => latest,
     provider => 'git',
     source   => 'https://github.com/collectionspace/ui.git',
-    revision => $source_code_revision,
+    revision => $source_code_rev_local,
     path     => "${cspace_source_dir}/ui",
     tag      => 'ui',
     require  => [
