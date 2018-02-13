@@ -88,14 +88,14 @@ class cspace_source(
     command   => '/bin/sh -c "command -v ant"',
     path      => $exec_paths,
     logoutput => true,
-    tag       => [ 'services', 'application', 'ui' ],
+    tag       => [ 'services', 'application' ],
   }
   
   exec { 'Find Maven executable':
     command   => '/bin/sh -c "command -v mvn"',
     path      => $exec_paths,
     logoutput => true,
-    tag       => [ 'services', 'application', 'ui' ],
+    tag       => [ 'services', 'application' ],
   }
   
   # ---------------------------------------------------------
@@ -121,14 +121,14 @@ class cspace_source(
 
   notify{ 'Creating source directory':
     message => "Creating ${cspace_source_dir} directory to hold CollectionSpace source code, if not present ...",
-    tag     => [ 'services', 'application', 'ui' ],
+    tag     => [ 'services', 'application' ],
   }
   
   file { 'Ensure CollectionSpace source directory':
     ensure  => 'directory',
     path    => $cspace_source_dir,
     owner   => $user_acct,
-    tag     => [ 'services', 'application', 'ui' ],
+    tag     => [ 'services', 'application' ],
     require => Notify [ 'Creating source directory' ],
   }
   
@@ -188,28 +188,6 @@ class cspace_source(
     ]
   }
   
-  # Download the UI layer source code
-
-  notify{ 'Downloading UI layer':
-    message => 'Downloading UI layer source code ...',
-    tag     => 'ui',
-    require => File [ 'Ensure CollectionSpace source directory' ],
-  }
-  
-  vcsrepo { 'Download UI layer source code':
-    ensure   => present,
-    # If targeting (unstable) master branch, can experiment with:
-    # ensure   => latest,
-    provider => 'git',
-    source   => 'https://github.com/collectionspace/ui.git',
-    revision => $source_code_rev_local,
-    path     => "${cspace_source_dir}/ui",
-    tag      => 'ui',
-    require  => [
-      Notify[ 'Downloading UI layer' ]
-    ]
-  }
-  
   # ---------------------------------------------------------
   # Change ownership of the source directory, if needed
   # ---------------------------------------------------------
@@ -217,12 +195,11 @@ class cspace_source(
   exec { 'Change ownership of source directory to CollectionSpace admin user':
     command   => "chown -R ${user_acct}: ${cspace_source_dir}",
     path      => $exec_paths,
-    tag       => [ 'services', 'application', 'ui' ],
+    tag       => [ 'services', 'application' ],
     logoutput => on_failure,
     require   => [
       Vcsrepo[ 'Download Application layer source code' ],
       Vcsrepo[ 'Download Services layer source code' ],
-      Vcsrepo[ 'Download UI layer source code' ],
     ]
   }
   
@@ -323,32 +300,13 @@ class cspace_source(
     tag         => [ 'services', 'application' ],
     require     => Notify[ 'Building Application layer' ],
   }
-  
-  # Build and deploy the UI layer
-  
-  notify{ 'Building UI layer':
-    message => 'Building and deploying UI layer ...',
-    tag     => 'ui',
-    require => Exec [ 'Build and deploy from Application layer source' ],
-  }
-  
-  exec { 'Build and deploy from UI layer source':
-    command     => $mvn_clean_install_cmd,
-    cwd         => "${cspace_source_dir}/ui",
-    path        => $exec_paths,
-    environment => $env_vars,
-    user        => $user_acct,
-    logoutput   => on_failure,
-    tag         => 'ui',
-    require     => Notify[ 'Building UI layer' ],
-  }
-  
+    
   # Deploy the Services layer
 
   notify{ 'Deploying Services layer':
     message => 'Deploying Services layer ...',
     tag     => 'services',
-    require => Exec[ 'Build and deploy from UI layer source' ],
+    require => Exec[ 'Build and deploy from Application layer source' ],
   }
   
   exec { 'Deploy from Services layer source':
