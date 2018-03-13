@@ -120,7 +120,7 @@ class cspace_source(
   }
 
   notify{ 'Creating source directory':
-    message => "Creating ${cspace_source_dir} directory to hold CollectionSpace source code, if not present ...",
+    message => "Creating ${cspace_source_dir} directory to hold CollectionSpace source code with revision ${source_code_rev_local}, if not present ...",
     tag     => [ 'services', 'application' ],
   }
   
