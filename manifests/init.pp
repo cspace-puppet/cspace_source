@@ -314,7 +314,7 @@ class cspace_source(
     # in place of a full deploy (which can be very time consuming):
     # command     => 'ant deploy_services_artifacts',
     # cwd         => "${cspace_source_dir}/services/services/JaxRsServiceProvider",
-    command     => 'ant deploy',
+    command     => 'ant undeploy deploy',
     cwd         => "${cspace_source_dir}/services",
     path        => $exec_paths,
     environment => $env_vars,
